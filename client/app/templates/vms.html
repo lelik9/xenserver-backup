@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+	<form action="" method="post" name="vms">
+        <h1 align="center">VMs</h1>
+        {% for vm in form.all_vm%}
+
+            <div align="left">
+                <a href="/vm/{{vm['_id']}}">{{vm['vm_name']}}</a>
+            </div>
+            <br>
+
+        {% endfor %}
+	</form>
+{% endblock %}

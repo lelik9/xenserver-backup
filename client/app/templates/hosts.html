@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+
+        <h2 align="center">ADD HOST</h2>
+
+        <form action="" method="post" name="add_host">
+            <div align="center">
+                host name: {{form.host_name}}
+                host ip address: {{form.host_ip_addr}}
+                user name: {{form.user_name}}
+                password: {{form.password}}
+                {{form.add_host_btn}}
+            </div>
+        </form>
+
+        <h1 align="center">HOSTS</h1>
+
+        <form action="" method="post" name="hosts">
+            {% for host in form.hosts%}
+
+                <div align="left">
+                    <a href="/vms/{{host['_id']}}">{{host['host_name']}}</a>
+                </div>
+                <div align="right">
+                    {{host['host_ip']}}
+                </div>
+                <br>
+
+            {% endfor %}
+        </form>
+
+{% endblock %}
