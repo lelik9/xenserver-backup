@@ -3,8 +3,8 @@ from XenAPI import Session
 
 XEN_HOST = 'http://10.10.10.149'
 PORT = 22
-USER = 'root'
-PASSWORD = 'Go2Alex25O'
+USER = ''
+PASSWORD = ''
 HOST = '10.10.10.149'
 
 
