@@ -1,9 +1,9 @@
 from flask_wtf import Form
-from wtforms import StringField, SelectField, SubmitField
+from wtforms import StringField, SelectField, SubmitField, RadioField
 from wtforms import BooleanField
 from wtforms import PasswordField
 from wtforms.validators import DataRequired, length
-from models import VmModel
+from models import VmModel, BackupModel
 
 
 class HostsForm(Form):
@@ -22,9 +22,20 @@ class VmsForm(Form):
 
 class VmForm(Form):
 	vm = None
+	backups = None
 	backup_btn = SubmitField('backup now')
+	sel_backup = RadioField()
 
 	def __init__(self, id):
 		Form.__init__(self)
 		self.vm = VmModel.get_vm(id)
+		self.backups = BackupModel.get_vms_backups(id)
+		# choice = []
+		#
+		# for backup in self.backups:
+		# 	choice.append((str(backup['_id']), backup[
+		# 		'vm_name']))
+		#
+		# self.sel_backup.choices = choice
+
 

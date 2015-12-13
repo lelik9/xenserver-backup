@@ -35,9 +35,16 @@ def vms(id):
 @app.route('/vm/<id>', methods=['POST', 'GET'])
 def vm(id):
 	vm_form = VmForm(id)
+	vm_controller = VmController()
 
 	if vm_form.backup_btn.data:
-		vm_controller = VmController()
 		vm_form.backup_info = vm_controller.backup_vm(id)
+
+	if request.method == 'POST':
+		try:
+			print(request.form['backup'])
+		except Exception:
+			# FIXME: send alert in page
+			return render_template('vm.html', form=vm_form)
 
 	return render_template('vm.html', form=vm_form)

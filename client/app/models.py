@@ -55,5 +55,16 @@ class VmModel:
 class BackupModel:
 
 	@staticmethod
-	def add_backup_info(args):
-		mongo.db.backup.insert(args)
+	def add_backup_info(**kwargs):
+		mongo.db.backup.insert(kwargs)
+
+	@staticmethod
+	def get_vms_backups(id):
+		if id == 'all':
+			backups = mongo.db.backup.find()
+		else:
+			backups = mongo.db.backup.find({'vm_id': id})
+
+		all_backup = list(backups)
+		print(all_backup)
+		return all_backup

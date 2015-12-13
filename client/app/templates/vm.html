@@ -11,8 +11,49 @@
 		</form>
 	</div>
 	<br>
-	<div align="center">
-		<h2>Backups</h2>
-	</div>
-	{{form.backup_info}}
+	<form name="restore_form" role="form" method="post">
+		<div align="center">
+			<h2>Backups</h2>
+		</div>
+		<div align="center">
+			<input type="submit"  value="restore">
+		</div>
+
+		<table border="2" align="left" width="100%">
+			<tr>
+				<td>
+					<h3>VM name</h3>
+				</td>
+				<td>
+					<h3>VDIs</h3>
+				</td>
+				<td>
+					<h3>Backup time</h3>
+				</td>
+			</tr>
+			{% for backup in form.backups %}
+				<tr>
+					<td>
+	                    <input type="radio" name="backup" value="{{backup['_id']}}"> {{backup['vm_name']}}<Br>
+					</td>
+					<td>
+						<div align="center">
+							{% for vdi in backup['vdis']%}
+								{{vdi}} <br>
+							{% endfor %}
+							<br>
+						</div>
+					</td>
+					<td>
+						<div align="center">
+							{{backup['date']}}
+							<br>
+						</div>
+					</td>
+				</tr>
+			{% endfor %}
+		</table>
+
+	</form>
+
 {% endblock %}
