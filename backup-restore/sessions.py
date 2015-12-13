@@ -1,11 +1,10 @@
 import paramiko
 from XenAPI import Session
 
-XEN_HOST = 'http://10.10.10.149'
 PORT = 22
 USER = ''
 PASSWORD = ''
-HOST = '10.10.10.149'
+HOST = ''
 
 
 def ssh_connect():
@@ -21,9 +20,9 @@ def ssh_disconnect(ssh_session):
 	ssh_session.close()
 
 
-def connect(login, password, host):
-	session = Session('http://' + host)
-	session.login_with_password(login, password)
+def connect():
+	session = Session('http://' + HOST)
+	session.login_with_password(USER, PASSWORD)
 	print('connected')
 
 	return session

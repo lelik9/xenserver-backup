@@ -75,7 +75,7 @@ def mount_folder(ssh_session):
 def copy_disk(sr, vdi, vdi_uuid, ssh_session, backup_dir, session):
 	try:
 		file_name = ('"' + session.xenapi.VDI.get_name_label(vdi) + '_' +
-		             str(datetime.now().strftime("%Y-%m-%d")) + '.dd"')
+		             str(datetime.now().strftime("%Y-%m-%d_%H:%m")) + '.dd"')
 
 		command = 'dd if={disk} of=' + backup_dir + '/' + file_name + \
 		          ' bs=102400'
@@ -84,12 +84,12 @@ def copy_disk(sr, vdi, vdi_uuid, ssh_session, backup_dir, session):
 			path = ISCSI_SR_PATH + sr['uuid']
 			disk = path + '/VHD-' + vdi_uuid
 			com = command.format(disk=disk)
-
+			print('disk', disk)
 			# Activate VHD for cloning
 			ssh_session.exec_command('lvchange -ay ' + disk)
-
+			print('command ', command)
 			stdin, stdout, stderr = ssh_session.exec_command(com)
-			print(stdout.read(), stderr.read())
+			print('out ', stdout.read(), ' err ', stderr.read())
 
 		elif sr['type'] == 'nfs':
 			path = NFS_SR_PATH + sr['uuid']
@@ -115,8 +115,7 @@ def create_backup_dir(ssh_session, vm_name):
 	return dir_name
 
 
-def make_backup(session, vm_obj, vm_name):
-	ssh_session = ssh_connect()
+def make_backup(session, ssh_session, vm_obj, vm_name):
 	mount_folder(ssh_session)
 
 	try:
@@ -148,33 +147,38 @@ def make_backup(session, vm_obj, vm_name):
 
 # if __name__ == "__main__":
 #
+
 # 	session = connect('', '')
+
+# 	session = connect('login', 'password', '10.10.10.149')
 # 	ssh_session = ssh_connect()
 # 	mount_folder(ssh_session)
 #
 # 	vms = get_vm(session)
 #
 # 	for vm_name in vms.keys():
-#
-# 		try:
-# 			backup_dir = create_backup_dir(ssh_session, vm_name)
-# 		except Exception as e:
-# 			print(e)
-# 			break
-#
-# 		try:
-# 			snapshot = create_snapshot(session, vms[vm_name], vm_name)
-# 			vdi_uuids = get_vdi(session, snapshot)
-#
-# 			for vdi, vdi_uuid in vdi_uuids:
-# 				sr = get_sr(session, vdi)
-# 				copy_disk(sr, vdi, vdi_uuid, ssh_session, backup_dir)
-# 				session.xenapi.VDI.destroy(vdi)
-#
-# 			session.xenapi.VM.destroy(snapshot)
-# 		except Exception as e:
-# 			# FIXME: add to log
-# 			print('exception', e)
+# 		print(session, vms[vm_name], vm_name)
+# 		make_backup(session, u'OpaqueRef:f7e12f0d-d80a-5f89-5028-2b084cc65ad5',
+# 		            u'cent')
+# 		# try:
+# 		# 	backup_dir = create_backup_dir(ssh_session, vm_name)
+# 		# except Exception as e:
+# 		# 	print(e)
+# 		# 	break
+# 		#
+# 		# try:
+# 		# 	snapshot = create_snapshot(session, vms[vm_name], vm_name)
+# 		# 	vdi_uuids = get_vdi(session, snapshot)
+# 		#
+# 		# 	for vdi, vdi_uuid in vdi_uuids:
+# 		# 		sr = get_sr(session, vdi)
+# 		# 		copy_disk(sr, vdi, vdi_uuid, ssh_session, backup_dir, session)
+# 		# 		session.xenapi.VDI.destroy(vdi)
+# 		#
+# 		# 	session.xenapi.VM.destroy(snapshot)
+# 		# except Exception as e:
+# 		# 	# FIXME: add to log
+# 		# 	print('exception', e)
 #
 # 	ssh_disconnect(ssh_session)
 # 	disconnect(session)
