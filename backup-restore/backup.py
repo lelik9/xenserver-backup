@@ -148,7 +148,7 @@ def make_backup(session, vm_obj, vm_name):
 
 # if __name__ == "__main__":
 #
-# 	session = connect('root', 'Go2Alex25O')
+# 	session = connect('', '')
 # 	ssh_session = ssh_connect()
 # 	mount_folder(ssh_session)
 #
