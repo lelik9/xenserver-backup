@@ -1,12 +1,11 @@
 # codding: utf-8
 import os
 from datetime import datetime
-from sessions import connect, disconnect, ssh_connect, ssh_disconnect
+from sessions import disconnect, ssh_disconnect
 
-VM_FOR_BACKUP = ['cent']
 NFS_SR_PATH = '/var/run/sr-mount/'
 ISCSI_SR_PATH = '/dev/VG_XenStorage-'
-BACKUP_PATH = '/media/'
+BACKUP_PATH = '/media'
 MOUNT_PATH = {'nfs': '10.10.10.61:/xenclusterbackup'}
 
 
@@ -28,8 +27,17 @@ def get_vm(session):
 def get_vdi(session, vm):
 	vbds = session.xenapi.VM.get_VBDs(vm)
 
-	for vbd in vbds:
-		vdi = session.xenapi.VBD.get_VDI(vbd)
+	for vbd_s in vbds:
+		try:
+			vbd = {}
+			vdi = session.xenapi.VBD.get_VDI(vbd_s)
+			vbd['device'] = session.xenapi.VBD.get_device(vbd_s)
+			vbd['bootable'] = session.xenapi.VBD.get_bootable(vbd_s)
+			vbd['mode'] = session.xenapi.VBD.get_mode(vbd_s)
+			vbd['type'] = session.xenapi.VBD.get_type(vbd_s)
+			vbd['unplag'] = session.xenapi.VBD.get_unpluggable(vbd_s)
+		except Exception as e:
+			print('get vdi failed: ' + e)
 
 		if 'NULL' in vdi:
 			# FIXME: add to log
@@ -38,8 +46,8 @@ def get_vdi(session, vm):
 		else:
 			sm_config = session.xenapi.VDI.get_sm_config(vdi)
 			vdi_uuid = sm_config['vhd-parent']
-
-			yield vdi, vdi_uuid
+			print(vdi, vdi_uuid, vbd)
+			yield vdi, vdi_uuid, vbd
 
 
 def get_sr(session, vdi):
@@ -53,10 +61,11 @@ def get_sr(session, vdi):
 def create_snapshot(session, vm, vm_name):
 	try:
 		snap = session.xenapi.VM.snapshot(vm, vm_name)
-		print(snap)
+		print('snapshot: ', snap)
 
 		return snap
 	except Exception as e:
+		print('Creating snapshot error. Reason: ' + e)
 		raise Exception('Creating snapshot error. Reason: ' + e)
 
 
@@ -72,10 +81,18 @@ def mount_folder(ssh_session):
 			print(e, stdout.read(), stderr.read())
 
 
+def umount_folder(ssh_session):
+	try:
+		stdin, stdout, stderr = ssh_session.exec_command(
+			"umount " + BACKUP_PATH)
+	except Exception as e:
+		print(e, stdout.read(), stderr.read())
+
+
 def copy_disk(sr, vdi, vdi_uuid, ssh_session, backup_dir, session):
 	try:
 		file_name = ('"' + session.xenapi.VDI.get_name_label(vdi) + '_' +
-		             str(datetime.now().strftime("%Y-%m-%d_%H:%m")) + '.dd"')
+		             str(datetime.now().strftime("%Y-%m-%d_%H-%m")) + '.dd"')
 
 		command = 'dd if={disk} of=' + backup_dir + '/' + file_name + \
 		          ' bs=102400'
@@ -87,7 +104,7 @@ def copy_disk(sr, vdi, vdi_uuid, ssh_session, backup_dir, session):
 			print('disk', disk)
 			# Activate VHD for cloning
 			ssh_session.exec_command('lvchange -ay ' + disk)
-			print('command ', command)
+			print('command ', com)
 			stdin, stdout, stderr = ssh_session.exec_command(com)
 			print('out ', stdout.read(), ' err ', stderr.read())
 
@@ -103,6 +120,7 @@ def copy_disk(sr, vdi, vdi_uuid, ssh_session, backup_dir, session):
 		print('Copy disk error: ' + e)
 
 	return file_name
+
 
 def create_backup_dir(ssh_session, vm_name):
 	dir_name = BACKUP_PATH + '/' + vm_name
@@ -125,25 +143,37 @@ def make_backup(session, ssh_session, vm_obj, vm_name):
 
 	try:
 		snapshot = create_snapshot(session, vm_obj, vm_name)
-		vdi_uuids = get_vdi(session, snapshot)
+		vdi_s = get_vdi(session, snapshot)
 		vdis = []
 
-		for vdi, vdi_uuid in vdi_uuids:
+		for vdi, uuid, vbd in vdi_s:
+			print(vdi, uuid ,vbd)
+			item = {}
 			sr = get_sr(session, vdi)
-			file_name = copy_disk(sr, vdi, vdi_uuid, ssh_session, backup_dir,
-			                      session)
-			vdis.append(file_name)
+			file_name = copy_disk(sr, vdi, uuid,
+			                      ssh_session, backup_dir, session)
+
+			item['name'] = file_name
+			item['size'] = session.xenapi.VDI.get_virtual_size(vdi)
+			item['vbd'] = vbd
+
+			vdis.append(item)
 			session.xenapi.VDI.destroy(vdi)
 
 		session.xenapi.VM.destroy(snapshot)
 	except Exception as e:
 		# FIXME: add to log
 		print('exception', e)
-		ssh_disconnect(ssh_session)
 
+	umount_folder(ssh_session)
+	disconnect(session)
 	ssh_disconnect(ssh_session)
 
 	return vdis
+
+
+def vm_meta_backup(session):
+	pass
 
 # if __name__ == "__main__":
 #

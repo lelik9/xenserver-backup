@@ -13,11 +13,13 @@ def ssh_connect():
 	ssh_session.connect(hostname=HOST, username=USER, password=PASSWORD,
 	                    port=PORT)
 
+	print('connected')
 	return ssh_session
 
 
 def ssh_disconnect(ssh_session):
 	ssh_session.close()
+	print('disconnected')
 
 
 def connect():
