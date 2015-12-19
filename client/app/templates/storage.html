@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+	<table class="table table-striped" border="2" align="left" width="100%">
+	<tr>
+		<h1 align="center">Storage</h1>
+	</tr>
+	<tr>
+		<h2 align="center">Add backup storage</h2>
+		<form name="add_form" role="form" method="get">
+			<select name="protocol">
+				<option value="smb">smb</option>
+				<option value="nfs">nfs</option>
+				<option value="folder">folder</option>
+			</select>
+			storage name: <input type="text" name="sr_name">
+			share name: <input type="text" name="share">
+			user*: <input type="text" name="user">
+			password*: <input type="password" name="password">
+			<button type="submit" class="btn btn-default">add</button>
+			<br>
+			*username and password if needed
+		</form>
+	</tr>
+	<tr>
+
+	</tr>
+
+	</table>
+{% endblock %}

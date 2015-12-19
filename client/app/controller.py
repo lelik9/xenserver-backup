@@ -6,6 +6,19 @@ sys.path.append('../backup-restore/')
 import backup, sessions
 
 
+def _establish_session(host_id):
+	host = HostsModel.get_host(host_id)
+
+	sessions.HOST = host['host_ip']
+	sessions.USER = host['login']
+	sessions.PASSWORD = host['password']
+
+	session = sessions.connect()
+	ssh_session = sessions.ssh_connect()
+
+	return session, ssh_session
+
+
 class HostController:
 	session = None
 
@@ -25,40 +38,49 @@ class HostController:
 
 
 class VmController:
-	sessions = None
-	ssh_session = None
-
 	def backup_vm(self, vm_id):
 		vm = VmModel.get_vm(vm_id)
 		host_id = vm['host_id']
-		host = HostsModel.get_host(host_id)
+		session, ssh_session = _establish_session(host_id)
 
-		sessions.HOST = host['host_ip']
-		sessions.USER = host['login']
-		sessions.PASSWORD = host['password']
-
-		self.sessions = sessions.connect()
-
-		self.ssh_session = sessions.ssh_connect()
 		print(vm)
 		try:
-			vdis = backup.make_backup(session=self.sessions,
-			                          ssh_session=self.ssh_session,
+			vdis = backup.make_backup(session=session,
+			                          ssh_session=ssh_session,
 			                          vm_obj=vm['vm_object'],
 			                          vm_name=vm['vm_name'])
-
-			BackupModel.add_backup_info(vm_name=vm['vm_name'],
-			                            vm_id=vm_id,
-			                            vdis=vdis,
-			                            date=datetime.now().strftime(
-				                            "%Y-%m-%d_%H:%m"))
-
 		except Exception as e:
 			print(e)
-			sessions.disconnect(self.sessions)
 			backup_result = {'result': 'fail'}
 			return backup_result
 
-		sessions.disconnect(self.sessions)
+		BackupModel.add_backup_info(vm_name=vm['vm_name'],
+		                            vm_id=vm_id,
+		                            vdis=vdis,
+		                            date=datetime.now().strftime(
+			                            "%Y-%m-%d_%H-%m"))
+
+		sessions.disconnect(session)
 		backup_result = {'result': 'ok'}
 		return backup_result
+
+	def remove_backup(self, backup_id, vm_id):
+		vm = VmModel.get_vm(vm_id)
+		host_id = vm['host_id']
+		session, ssh_session = _establish_session(host_id)
+
+		try:
+			res = list(BackupModel.get_backup_info(backup_id))[0]
+
+			BackupModel.remove_backup(backup_id)
+			backup.mount_folder(ssh_session)
+
+			for vdi in res['vdis']:
+				stdin, stdout, stderr = ssh_session.exec_command(
+					'rm -f /media/' +
+					vdi)
+		except:
+			pass
+		finally:
+			sessions.ssh_disconnect(ssh_session)
+			sessions.disconnect(session)

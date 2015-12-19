@@ -66,5 +66,21 @@ class BackupModel:
 			backups = mongo.db.backup.find({'vm_id': id})
 
 		all_backup = list(backups)
-		print(all_backup)
+
 		return all_backup
+
+	@staticmethod
+	def remove_backup(id):
+		mongo.db.backup.remove({'_id': ObjectId(id)})
+
+	@staticmethod
+	def get_backup_info(id):
+		backup = mongo.db.backup.find({'_id': ObjectId(id)}, {'vdis': 1})
+
+		return backup
+
+class StorageModel:
+
+	@staticmethod
+	def add_storage(**kwargs):
+		mongo.db.sr.insert(kwargs)

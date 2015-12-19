@@ -1,13 +1,28 @@
 from flask import render_template, flash, redirect, request, url_for, send_file
 from app import app
 from forms import HostsForm, VmsForm, VmForm
-from models import HostsModel
+from models import HostsModel, StorageModel
 from controller import HostController, VmController
 
 
 @app.route('/', methods=['POST', 'GET'])
 def index():
 	return render_template('index.html')
+
+
+@app.route('/storage', methods=['GET'])
+def storage():
+
+	if request.method == 'GET':
+		try:
+			StorageModel.add_storage(sr_name=request.args.get('sr_name'),
+			                         share=request.args.get('share'),
+			                         user=request.args.get('user'),
+			                         password=request.args.get('password'),
+			                         protocol=request.args.get('protocol'))
+		except Exception:
+			pass
+	return render_template('storage.html')
 
 
 @app.route('/hosts', methods=['POST', 'GET'])
@@ -35,16 +50,28 @@ def vms(id):
 @app.route('/vm/<id>', methods=['POST', 'GET'])
 def vm(id):
 	vm_form = VmForm(id)
+	vm_form.alert = False
 	vm_controller = VmController()
 
 	if vm_form.backup_btn.data:
 		vm_form.backup_info = vm_controller.backup_vm(id)
 
-	if request.method == 'POST':
+	if request.method == 'GET':
 		try:
-			print(request.form['backup'])
-		except Exception:
-			# FIXME: send alert in page
-			return render_template('vm.html', form=vm_form)
+			submit = request.args.get('submit')
+
+			if submit is not None:
+				backup_id = request.args.get('backup')
+
+				if backup_id is not None:
+					if submit == 'remove':
+						vm_controller.remove_backup(backup_id, id)
+				else:
+					vm_form.alert = True
+
+				return redirect(url_for('vm', id=id))
+		except Exception as e:
+			print('exception: ', e)
+			# vm_form.alert = True
 
 	return render_template('vm.html', form=vm_form)

@@ -3,26 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <title>XENServerBackup</title>
+	<link href="../static/css/bootstrap.css" rel="stylesheet"
+	      media="screen">
 </head>
 <body>
-    <table border="1" align="left" width="100%">
-        <tr>
-            <td align="center" colspan="2">
-                <h1>XENServerBackup</h1>
-            </td>
-        </tr>
-        <tr>
-            <td width="15%" align="left">
-                <a href="/">Panel</a><br>
-                <a href="/hosts">Hosts</a><br>
-                <a href="/vms/all">VM</a><br>
-                <a href="/backup">Backups</a><br>
-            </td>
-            <td width="85%" align="center">
-                {% block content %}
-                {% endblock %}
-            </td>
-        </tr>
-    </table>
+      <div class="container">
+        <div class="page-header" align="center">
+          <h1>XENServerBackup</h1>
+        </div>
+      </div>
+
+    <div class="container-fluid">
+	  <div class="row-fluid">
+	    <div class="span1">
+		    <ul class="nav nav-pills nav-stacked">
+				<li><a class="btn" href="/">Panel</a></li>
+	            <li><a class="btn" href="/hosts">Hosts</a></li>
+	            <li><a class="btn" href="/vms/all">VM</a></li>
+	            <li><a class="btn" href="/storage">Storage</a></li>
+	            <li><a class="btn" href="/backup">Backups</a></li>
+			</ul>
+	    </div>
+
+	    <div class="span11">
+			{% block content %}
+			{% endblock %}
+	    </div>
+	  </div>
+
+	</div>
+
+    <script src="http://code.jquery.com/jquery-latest.js"></script>
+    <script src="../static/js/bootstrap.min.js"></script>
 </body>
 </html>
