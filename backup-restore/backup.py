@@ -42,11 +42,11 @@ def get_vdi(session, vm):
 		if 'NULL' in vdi:
 			# FIXME: add to log
 			print('VM', session.xenapi.VM.get_name_label(vm),
-			      'had bad VDB, UUID: ', session.xenapi.VBD.get_uuid(vbd))
+			      'had bad VDB, UUID: ', session.xenapi.VBD.get_uuid(vbd_s))
 		else:
 			sm_config = session.xenapi.VDI.get_sm_config(vdi)
 			vdi_uuid = sm_config['vhd-parent']
-			print(vdi, vdi_uuid, vbd)
+			# print(vdi, vdi_uuid, vbd)
 			yield vdi, vdi_uuid, vbd
 
 
@@ -76,7 +76,7 @@ def mount_folder(ssh_session):
 			                                                 MOUNT_PATH[
 				                                                 'nfs'] + ' ' +
 			                                                 BACKUP_PATH)
-			print(stdout.read(), stderr.read())
+
 		except Exception as e:
 			print(e, stdout.read(), stderr.read())
 
@@ -147,7 +147,6 @@ def make_backup(session, ssh_session, vm_obj, vm_name):
 		vdis = []
 
 		for vdi, uuid, vbd in vdi_s:
-			print(vdi, uuid ,vbd)
 			item = {}
 			sr = get_sr(session, vdi)
 			file_name = copy_disk(sr, vdi, uuid,
@@ -164,6 +163,7 @@ def make_backup(session, ssh_session, vm_obj, vm_name):
 	except Exception as e:
 		# FIXME: add to log
 		print('exception', e)
+		raise Exception('VDI backup failed ' + e)
 
 	umount_folder(ssh_session)
 	disconnect(session)
