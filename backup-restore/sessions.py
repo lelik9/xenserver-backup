@@ -8,28 +8,28 @@ HOST = ''
 
 
 def ssh_connect():
-	ssh_session = paramiko.SSHClient()
-	ssh_session.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-	ssh_session.connect(hostname=HOST, username=USER, password=PASSWORD,
-	                    port=PORT)
+    ssh_session = paramiko.SSHClient()
+    ssh_session.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh_session.connect(hostname=HOST, username=USER, password=PASSWORD,
+                        port=PORT)
 
-	print('connected')
-	return ssh_session
+    print('connected')
+    return ssh_session
 
 
 def ssh_disconnect(ssh_session):
-	ssh_session.close()
-	print('disconnected')
+    ssh_session.close()
+    print('disconnected')
 
 
 def connect():
-	session = Session('http://' + HOST)
-	session.login_with_password(USER, PASSWORD)
-	print('connected')
+    session = Session('http://' + HOST)
+    session.login_with_password(USER, PASSWORD)
+    print('connected')
 
-	return session
+    return session
 
 
 def disconnect(session):
-	session.logout()
-	print('disconnected')
+    session.logout()
+    print('disconnected')

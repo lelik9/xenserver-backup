@@ -30,12 +30,6 @@ class VmForm(Form):
 		Form.__init__(self)
 		self.vm = VmModel.get_vm(id)
 		self.backups = BackupModel.get_vms_backups(id)
-		# choice = []
-		#
-		# for backup in self.backups:
-		# 	choice.append((str(backup['_id']), backup[
-		# 		'vm_name']))
-		#
-		# self.sel_backup.choices = choice
+
 
 
