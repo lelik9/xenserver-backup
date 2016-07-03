@@ -1,39 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
     <meta charset="UTF-8">
-    <title>XENServerBackup</title>
 	<link href="../static/css/bootstrap.css" rel="stylesheet"
 	      media="screen">
+    <link href="../static/css/AdminLTE.min.css" rel="stylesheet"
+	      media="screen">
+    <link href="../static/css/skins/_all-skins.min.css" rel="stylesheet"
+	      media="screen">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.5.0/css/font-awesome.min.css">
 </head>
-<body>
-      <div class="container">
-        <div class="page-header" align="center">
-          <h1>XENServerBackup</h1>
+<body class="hold-transition skin-blue sidebar-mini">
+<div class="wrapper">
+    <header class="main-header">
+      <a href="/" class="logo">
+        <!-- LOGO -->
+        XSBackup
+      </a>
+      <!-- Header Navbar: style can be found in header.less -->
+      <nav class="navbar navbar-static-top" role="navigation">
+        <!-- Navbar Right Menu -->
+        <div class="navbar-custom-menu">
+          <ul class="nav navbar-nav navbar-right">
+              <li><a href="/login">Logout</a></li>
+          </ul>
         </div>
-      </div>
+      </nav>
+    </header>
+</div>
+    <div class="main-sidebar">
+  <!-- Inner sidebar -->
+        <div class="sidebar">
+            <ul class="sidebar-menu">
+                <li><a href="/"><span>Panel</span></a></li>
+                <li><a href="/hosts"><span>Hosts</span></a></li>
+                <li><a href="/vms/all"><span>VM</span></a></li>
+                <li><a href="/storage"><i class="glyphicon glyphicon-hdd"></i><span>Storage</span></a></li>
+                <li><a chref="/backup"><span>Backups</span></a></li>
+            </ul>
+        </div>
+    </div>
+        <!-- Right side column. Contains the navbar and content of the page -->
+        <div class="content-wrapper">
+            <!-- Content Header (Page header) -->
+            <section class="content-header">
+                <h1>
+                    {% block page_title %}{% endblock %}
+                    <small>{% block page_subtitle %}{% endblock %}</small>
+                </h1>
+                {% block breadcrumb %}
+{#                    {% show_breadcrumb %}#}
+                {% endblock %}
+            </section>
 
-    <div class="container-fluid">
-	  <div class="row-fluid">
-	    <div class="span1">
-		    <ul class="nav nav-pills nav-stacked">
-				<li><a class="btn" href="/">Panel</a></li>
-	            <li><a class="btn" href="/hosts">Hosts</a></li>
-	            <li><a class="btn" href="/vms/all">VM</a></li>
-	            <li><a class="btn" href="/storage">Storage</a></li>
-	            <li><a class="btn" href="/backup">Backups</a></li>
-			</ul>
-	    </div>
+            <!-- Main content -->
+            <section class="content">
+                {% block content %}{% endblock %}
+            </section>
+            <!-- /.content -->
+        </div>
+        <!-- /.content-wrapper -->
 
-	    <div class="span11">
-			{% block content %}
-			{% endblock %}
-	    </div>
-	  </div>
 
-	</div>
 
     <script src="http://code.jquery.com/jquery-latest.js"></script>
     <script src="../static/js/bootstrap.min.js"></script>
+    <script src="../static/js/app.min.js"></script>
+
 </body>
 </html>
