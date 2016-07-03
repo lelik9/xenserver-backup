@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>XenServer backup utility</title>
+    <link rel="stylesheet" href="static/style.css" media="screen">
+</head>
+<body>
+<div class="wrapper">
+    <div class="top-menu">
+        <div class="menu-button">
+
+        </div>
+        <div class="logout-button">
+            <a href="{{ url_for('login') }}">Logout</a>
+        </div>
+    </div>
+    <div class="main-block">
+        <div class="left-menu">
+            <div class="user-about">
+
+            </div>
+            <ul>
+				<li><a href="/">Panel</a></li>
+	            <li><a href="/hosts">Hosts</a></li>
+	            <li><a href="/vms/all">VM</a></li>
+	            <li><a href="/storage">Storage</a></li>
+	            <li><a href="/backup">Backups</a></li>
+			</ul>
+        </div>
+        <div class="worktable">
+            {% block content %}
+			{% endblock %}
+        </div>
+        <div class="notification-area">
+        </div>
+    </div>
+</div>
+</body>
+</html>

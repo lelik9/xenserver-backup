@@ -1,0 +1,88 @@
+body {
+    background-color: #f2f2f2;
+    margin: 0;
+    height: 100%;
+}
+.wrapper {
+    width: 100%;
+}
+
+.top-menu {
+    position: relative;
+    width: 100%;
+    height: 46px;
+    background-color: #ffd777;
+    border-bottom: 2px solid #ddd2b6;
+}
+
+.menu-button {
+    float: left;
+}
+
+.logout-button {
+   float: right;
+   width: 54px;
+   height: 26px;
+   text-align: center;
+   background-color: #6adff1;
+   margin-top: 10px;
+   margin-right: 10px;
+   border-radius: 5px;
+
+}
+
+.logout-button > a {
+   text-decoration: none;
+   color: white;
+   font-size: 16px;
+   line-height: 26px;
+}
+
+.main-block {
+    position: absolute;
+    top: 48px;
+    width: 100%;
+    min-height: 900px;
+    height: 1px;
+}
+
+.left-menu {
+    position: relative;
+    float: left;
+    width: 150px;
+    min-height: 100%;
+    background-color: #434a5d;
+}
+
+.left-menu > ul {
+    line-height: 36px;
+    list-style: none; /*убираем маркеры списка*/
+    margin: 0; /*убираем верхнее и нижнее поле, равное 1em*/
+    padding-left: 0; /*убираем левый отступ, равный 40px*/
+    text-align: center;
+}
+
+.left-menu > ul > li:hover {
+    background-color: #67dff0;
+}
+
+.left-menu > ul > li > a {
+    text-decoration: none; /*убираем подчеркивание текста ссылок*/
+    color: #abb2b8;
+}
+
+.notification-area {
+    width: 250px;
+    height: 100%;
+    float: right;
+    background-color: #ffffff;
+}
+
+.worktable {
+    position:absolute;
+    width: 100%;
+    height: 100%;
+    float: left;
+    left: 150px;
+    margin-right: 250px;
+}

@@ -5,7 +5,7 @@ from models import HostsModel, BackupStorageModel
 from controller import HostController, VmController
 
 
-@app.route('/login', method=['GET'])
+@app.route('/login', methods=['GET'])
 def login():
     pass
 
