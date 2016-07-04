@@ -34,6 +34,9 @@ def hosts():
     host_form = HostsForm()
     host_form.hosts = HostsModel.get_managment_hosts()
 
+    if request.method == 'POST':
+        print('request', request.form)
+
     if host_form.add_host_btn.data:
         host_contorller = HostController()
         host_contorller.add_host(login=host_form.user_name.data,

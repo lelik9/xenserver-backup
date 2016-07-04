@@ -1,32 +1,77 @@
 {% extends "base.html" %}
 {% block content %}
+    <div class="row">
+        <button type="button" class="btn bg-green btn-flat" data-toggle="modal" data-target="#addHost">
+        ADD
+        </button>
+        <button type="button" class="btn bg-red btn-flat" data-toggle="modal"
+                data-target="#rmHost">Remove
+        </button>
+    </div>
 
-        <h2 align="center">ADD HOST</h2>
+    <!-- Add Host modal window  -->
+    <div class="modal fade" tabindex="-1" role="dialog" id="addHost">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title">Add host</h4>
+          </div>
+          <div class="modal-body">
+            <!-- form start -->
+            <form class="form-horizontal" method="post" name="addHost">
+                <!-- IP field -->
+                <div class="form-group">
+                  <label for="inputIP" class="col-sm-2 control-label">Host IP</label>
+                  <div class="col-sm-10">
+                    <input type="text" class="form-control" id="inputIP" placeholder="IP">
+                  </div>
+                </div>
+                <!-- login field -->
+                <div class="form-group">
+                  <label for="inputLogin" class="col-sm-2 control-label">Login</label>
 
-        <form action="" method="post" name="add_host">
-            <div align="center">
-                host name: {{form.host_name}}
-                host ip address: {{form.host_ip_addr}}
-                user name: {{form.user_name}}
-                password: {{form.password}}
-                {{form.add_host_btn}}
+                  <div class="col-sm-10">
+                    <input type="text" class="form-control" id="inputLogin"
+                           placeholder="Login">
+                  </div>
+                </div>
+                <!-- password field -->
+                <div class="form-group">
+                  <label for="inputPassword" class="col-sm-2 control-label">Password</label>
+
+                  <div class="col-sm-10">
+                    <input type="password" class="form-control" id="inputPassword" placeholder="Password">
+                  </div>
+                </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary" id="addHost">ADD</button>
+          </div>
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+    <!-- Rm Host modal window  -->
+
+
+    <h1 align="center">HOSTS</h1>
+
+    <form action="" method="post" name="hosts">
+        {% for host in form.hosts%}
+
+            <div align="left">
+                <a href="/vms/{{host['_id']}}">{{host['host_name']}}</a>
             </div>
-        </form>
+            <div align="right">
+                {{host['host_ip']}}
+            </div>
+            <br>
 
-        <h1 align="center">HOSTS</h1>
+        {% endfor %}
+    </form>
 
-        <form action="" method="post" name="hosts">
-            {% for host in form.hosts%}
-
-                <div align="left">
-                    <a href="/vms/{{host['_id']}}">{{host['host_name']}}</a>
-                </div>
-                <div align="right">
-                    {{host['host_ip']}}
-                </div>
-                <br>
-
-            {% endfor %}
-        </form>
-
+{% endblock %}
+{% block script %}
 {% endblock %}
