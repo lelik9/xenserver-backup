@@ -1,7 +1,7 @@
-{% extends "base.html" %}
+{% extends "base.html"%}
 {% block content %}
     <div class="row">
-        <button type="button" class="btn bg-green btn-flat" data-toggle="modal" data-target="#addHost">
+        <button type="button" class="btn bg-green btn-flat" data-toggle="modal" data-target="#host">
         ADD
         </button>
         <button type="button" class="btn bg-red btn-flat" data-toggle="modal"
@@ -10,7 +10,7 @@
     </div>
 
     <!-- Add Host modal window  -->
-    <div class="modal fade" tabindex="-1" role="dialog" id="addHost">
+    <div class="modal fade" tabindex="-1" role="dialog" id="host">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
@@ -19,12 +19,13 @@
           </div>
           <div class="modal-body">
             <!-- form start -->
-            <form class="form-horizontal" method="post" name="addHost">
+            <form class="form-horizontal" method="post" id="hostForm">
                 <!-- IP field -->
                 <div class="form-group">
                   <label for="inputIP" class="col-sm-2 control-label">Host IP</label>
                   <div class="col-sm-10">
-                    <input type="text" class="form-control" id="inputIP" placeholder="IP">
+                    <input required pattern="^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$" type="text" class="form-control" name="ip" id="inputIP"
+                            placeholder="IP address 99.88.77.66">
                   </div>
                 </div>
                 <!-- login field -->
@@ -32,7 +33,7 @@
                   <label for="inputLogin" class="col-sm-2 control-label">Login</label>
 
                   <div class="col-sm-10">
-                    <input type="text" class="form-control" id="inputLogin"
+                    <input required type="text" class="form-control" name="login" id="inputLogin"
                            placeholder="Login">
                   </div>
                 </div>
@@ -41,14 +42,15 @@
                   <label for="inputPassword" class="col-sm-2 control-label">Password</label>
 
                   <div class="col-sm-10">
-                    <input type="password" class="form-control" id="inputPassword" placeholder="Password">
+                    <input required type="password" class="form-control" name="password" id="inputPassword"
+                           placeholder="Password">
                   </div>
                 </div>
+                <button type="submit" class="btn btn-primary" id="addHost">ADD</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
             </form>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-            <button type="button" class="btn btn-primary" id="addHost">ADD</button>
           </div>
         </div><!-- /.modal-content -->
       </div><!-- /.modal-dialog -->
@@ -56,22 +58,14 @@
     <!-- Rm Host modal window  -->
 
 
-    <h1 align="center">HOSTS</h1>
-
-    <form action="" method="post" name="hosts">
-        {% for host in form.hosts%}
-
-            <div align="left">
-                <a href="/vms/{{host['_id']}}">{{host['host_name']}}</a>
-            </div>
-            <div align="right">
-                {{host['host_ip']}}
-            </div>
-            <br>
-
-        {% endfor %}
-    </form>
 
 {% endblock %}
 {% block script %}
+    $('#hostForm').submit(function(){
+        $.post(
+            $(this).attr('/add_host'),
+            $(this).serializeArray()
+        );
+        return false;
+    });
 {% endblock %}

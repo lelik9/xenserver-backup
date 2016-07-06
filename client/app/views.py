@@ -4,6 +4,7 @@ from forms import HostsForm, VmsForm, VmForm
 from models import HostsModel, BackupStorageModel
 from controller import HostController, VmController
 
+from js_requests import *
 
 @app.route('/login', methods=['GET'])
 def login():
@@ -33,7 +34,7 @@ def storage():
 def hosts():
     host_form = HostsForm()
     host_form.hosts = HostsModel.get_managment_hosts()
-
+    print('method', request.method)
     if request.method == 'POST':
         print('request', request.form)
 

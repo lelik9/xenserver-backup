@@ -62,12 +62,16 @@
         </div>
         <!-- /.content-wrapper -->
 
-    {% block script %}
-    {% endblock %}
+
 
     <script src="http://code.jquery.com/jquery-latest.js"></script>
     <script src="../static/js/bootstrap.min.js"></script>
     <script src="../static/js/app.min.js"></script>
+
+    <script>
+        {% block script %}
+        {% endblock %}
+    </script>
 
 </body>
 </html>
