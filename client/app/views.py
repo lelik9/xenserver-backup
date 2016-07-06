@@ -1,3 +1,4 @@
+from __future__ import print_function
 from flask import render_template, flash, redirect, request, url_for, send_file
 from app import app
 from forms import HostsForm, VmsForm, VmForm
@@ -30,22 +31,11 @@ def storage():
     return render_template('storage.html')
 
 
-@app.route('/hosts', methods=['POST', 'GET'])
+@app.route('/hosts/', methods=['GET'])
 def hosts():
-    host_form = HostsForm()
-    host_form.hosts = HostsModel.get_managment_hosts()
-    print('method', request.method)
-    if request.method == 'POST':
-        print('request', request.form)
-
-    if host_form.add_host_btn.data:
-        host_contorller = HostController()
-        host_contorller.add_host(login=host_form.user_name.data,
-                                 password=host_form.password.data,
-                                 host_ip=host_form.host_ip_addr.data,
-                                 host_name=host_form.host_name.data)
-
-    return render_template('hosts.html', form=host_form)
+    if 'get' in request.args.keys():
+        return json.dumps([{'host': 'tst', 'pool': 'ts', 'ip': '1.1.1.2'}, ])
+    return render_template('hosts.html')
 
 
 @app.route('/vms/<id>', methods=['POST', 'GET'])

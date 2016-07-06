@@ -1,13 +1,12 @@
 {% extends "base.html"%}
 {% block content %}
-    <div class="row">
         <button type="button" class="btn bg-green btn-flat" data-toggle="modal" data-target="#host">
-        ADD
+            ADD
         </button>
-        <button type="button" class="btn bg-red btn-flat" data-toggle="modal"
-                data-target="#rmHost">Remove
+        <button type="button" class="btn bg-red btn-flat" id="rmHost">
+            Remove
         </button>
-    </div>
+
 
     <!-- Add Host modal window  -->
     <div class="modal fade" tabindex="-1" role="dialog" id="host">
@@ -56,16 +55,54 @@
       </div><!-- /.modal-dialog -->
     </div><!-- /.modal -->
     <!-- Rm Host modal window  -->
-
+    <div class="box">
+    <div class="box-body table-responsive no-padding">
+        <table class="table table-hover" width="100%" id="hostsTable">
+            <tr>
+                <th>Host name</th>
+                <th>Pool</th>
+                <th>IP address</th>
+            </tr>
+        </table>
+    </div>
+    </div>
 
 
 {% endblock %}
 {% block script %}
+
     $('#hostForm').submit(function(){
         $.post(
-            $(this).attr('/add_host'),
-            $(this).serializeArray()
+            '/host/',
+            $(this).serializeArray(),
+            fillTable()
         );
         return false;
     });
+
+    $('#rmHost').on('click', function(){
+        $.ajax({
+            url: '/host/',
+            type: 'DELETE',
+            data: {'id':'1'}
+        });
+    });
+
+    function fillTable(){
+        $.ajax({
+            url: '/hosts/',
+            type: 'GET',
+            data: {'get': 'table'},
+            dataType: 'json',
+            success: function (data) {
+                        for (i=0; i<data.length; i++){
+                            $('#hostsTable').append('<tr><td>'+data[i].host+'</td>' +
+                                    '<td>'+data[i].pool+'</td>' +
+                                    '<td>'+data[i].ip+'</td></tr>');
+                        }
+
+                    }
+        });
+    };
+    fillTable();
 {% endblock %}
