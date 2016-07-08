@@ -34,7 +34,8 @@ def storage():
 @app.route('/hosts/', methods=['GET'])
 def hosts():
     if 'get' in request.args.keys():
-        return json.dumps([{'host': 'tst', 'pool': 'ts', 'ip': '1.1.1.2'}, ])
+        return json.dumps([{'host': 'tst', 'pool': 'ts', 'ip': '1.1.1.2'},
+                           {'host': 'tst1', 'pool': 'ts', 'ip': '1.1.1.3'}])
     return render_template('hosts.html')
 
 

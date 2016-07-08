@@ -2,7 +2,7 @@
 {% block page_title %}Hosts{% endblock %}
 {% block content %}
     <div class="btn-box-tool" align="right">
-        <button type="button" class="btn bg-green btn-flat" data-toggle="modal" data-target="#host">
+        <button type="button" class="btn bg-green btn-flat" data-toggle="modal" data-target="#hostModal">
             ADD
         </button>
         <button type="button" class="btn bg-red btn-flat" id="rmHost">
@@ -11,7 +11,7 @@
     </div>
 
     <!-- Add Host modal window  -->
-    <div class="modal fade" tabindex="-1" role="dialog" id="host">
+    <div class="modal fade" tabindex="-1" role="dialog" id="hostModal">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
@@ -20,7 +20,7 @@
           </div>
           <div class="modal-body">
             <!-- form start -->
-            <form class="form-horizontal" method="post" id="hostForm">
+            <form class="form-horizontal" method="post" id="hostForm" action="/host/">
                 <!-- IP field -->
                 <div class="form-group">
                   <label for="inputIP" class="col-sm-2 control-label">Host IP</label>
@@ -52,10 +52,17 @@
             </form>
           </div>
           <div class="modal-footer">
+              <div class="progress" style="display:none" id="progress">
+                  <div class="progress-bar progress-bar-primary progress-bar-striped active"
+                       role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"
+                       style="width: 100%">
+                    </div>
+              </div>
           </div>
         </div><!-- /.modal-content -->
       </div><!-- /.modal-dialog -->
     </div><!-- /.modal -->
+
     <!-- Rm Host modal window  -->
     <div class="box">
     <div class="box-body table-responsive no-padding">
