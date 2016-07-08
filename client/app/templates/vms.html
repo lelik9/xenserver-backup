@@ -1,14 +1,25 @@
 {% extends "base.html" %}
+{% block page_title %}Virtual Machines{% endblock %}
 {% block content %}
-	<form action="" method="post" name="vms">
-        <h1 align="center">VMs</h1>
-        {% for vm in form.all_vm%}
 
-            <div align="left">
-                <a href="/vm/{{vm['_id']}}">{{vm['vm_name']}}</a>
-            </div>
-            <br>
+    <div class="btn-box-tool" align="right">
+        <button type="button" class="btn bg-green btn-flat" data-toggle="modal" data-target="#host">
+            Backup
+        </button>
+    </div>
 
-        {% endfor %}
-	</form>
+    <div class="box">
+        <div class="box-body table-responsive no-padding">
+            <table class="table table-hover" width="100%" id="hostsTable">
+                <tr>
+                    <th>VM</th>
+                    <th>Pool</th>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+{% endblock %}
+{% block script %}
+    <script src="../static/js/pages/vm.js"></script>
 {% endblock %}

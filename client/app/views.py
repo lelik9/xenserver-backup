@@ -1,4 +1,3 @@
-from __future__ import print_function
 from flask import render_template, flash, redirect, request, url_for, send_file
 from app import app
 from forms import HostsForm, VmsForm, VmForm
@@ -6,6 +5,7 @@ from models import HostsModel, BackupStorageModel
 from controller import HostController, VmController
 
 from js_requests import *
+
 
 @app.route('/login', methods=['GET'])
 def login():
@@ -40,9 +40,9 @@ def hosts():
 
 @app.route('/vms/<id>', methods=['POST', 'GET'])
 def vms(id):
-    vms_form = VmsForm(id)
+    # vms_form = VmsForm(id)
 
-    return render_template('vms.html', form=vms_form)
+    return render_template('vms.html')
 
 
 @app.route('/vm/<id>', methods=['POST', 'GET'])

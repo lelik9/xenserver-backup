@@ -1,12 +1,14 @@
 {% extends "base.html"%}
+{% block page_title %}Hosts{% endblock %}
 {% block content %}
+    <div class="btn-box-tool" align="right">
         <button type="button" class="btn bg-green btn-flat" data-toggle="modal" data-target="#host">
             ADD
         </button>
         <button type="button" class="btn bg-red btn-flat" id="rmHost">
             Remove
         </button>
-
+    </div>
 
     <!-- Add Host modal window  -->
     <div class="modal fade" tabindex="-1" role="dialog" id="host">
