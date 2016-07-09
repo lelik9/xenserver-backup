@@ -1,8 +1,15 @@
 # coding=utf-8
+from __future__ import print_function
 import json
 from flask import request
 
 from app import app
+from controller import HostController
+
+
+def response(result=None, resp_type='success'):
+    print(result)
+    return json.dumps({u'result': result, 'type': resp_type})
 
 
 @app.route('/host/', methods=['POST'])
@@ -15,7 +22,13 @@ def add_host():
     login = request.form['login']
     password = request.form['password']
 
-    return json.dumps({'message': 'Add host SUCCESS', 'type': 'success'})
+    try:
+        host = HostController(login, password, ip)
+        host.add_host()
+    except BaseException as e:
+        return response(result=str(e), resp_type='error')
+
+    return response(result='Host added', resp_type='success')
 
 
 @app.route('/host/', methods=['DELETE'])

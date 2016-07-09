@@ -1,8 +1,10 @@
+from __future__ import print_function
 from models import HostsModel, VmModel, BackupModel
 import sys
 from datetime import datetime
 
 sys.path.append('../backup-restore/')
+from app import app
 from restore import Restore
 import backup, sessions
 
@@ -21,21 +23,72 @@ def _establish_session(host_id):
 
 
 class HostController:
-    session = None
+    def __init__(self, user, password, ip):
+        self.ip = ip
 
-    def add_host(self, **kwargs):
-        sessions.HOST = kwargs['host_ip']
-        sessions.USER = kwargs['login']
-        sessions.PASSWORD = kwargs['password']
+        try:
+            self.session = sessions.connect(user, password, ip)
+        except BaseException as e:
+            # error = 'Host {} connection failed, cause: {}'.format(self.ip, str(e).encode('utf-8'))
+            # app.LOGGER.error(error)
+            raise BaseException('Host {} connection failed!'.format(self.ip))
 
-        self.session = sessions.connect()
-        host_id = HostsModel.add_managment_host(kwargs)
-        vms = backup.get_vm(self.session)
+        self.api = self.session.xenapi
 
-        for vm in vms.keys():
-            VmModel.add_vms(vm_name=vm, vm_object=vms[vm], host_id=host_id)
+    def add_host(self):
+        hosts = []
+        try:
+            hosts_obj = self.api.host.get_all()
+            pool_obj = self.api.pool.get_all()[0]
+            pool_name = self.api.pool.get_name_label(pool_obj)
+
+            is_pool_exist = HostsModel.get_pool(pool_name)
+            print(is_pool_exist)
+            if is_pool_exist is None:
+                for host_obj in hosts_obj:
+                    metrics = self.api.host.get_metrics(host_obj)
+                    ip = self.api.host.get_address(host_obj)
+                    host = {
+                        'obj': host_obj,
+                        'metrics': metrics,
+                        'name': self.api.host.get_hostname(host_obj),
+                        'ip': ip,
+                        'mem_total': int(self.api.host_metrics.get_memory_total(metrics)),
+                        'mem_free': int(self.api.host_metrics.get_memory_free(metrics)),
+                        'live': self.api.host_metrics.get_live(metrics)
+                        }
+                    hosts.append(host)
+
+                vms = self.get_host_vms()
+                result = {
+                    'pool': pool_name,
+                    'hosts': hosts,
+                    'vms': vms
+                }
+                HostsModel.add_host(result)
+            else:
+                raise BaseException('Pool already exist. For add new host in pool use REFRESH '
+                                    'button')
+        except BaseException as e:
+            error = u'Add host {} failed, cause: {}'.format(self.ip, str(e))
+            app.LOGGER.error(error)
+            raise BaseException(error)
 
         sessions.disconnect(self.session)
+
+    def get_host_vms(self):
+        vm_list = {}
+        all_vms = self.api.VM.get_all()
+        vms = filter(lambda x: (not self.api.VM.get_is_a_template(x)) and
+                               ('Control domain on host:' not in
+                                self.api.VM.get_name_label(x)),
+                     all_vms)
+
+        for vm in vms:
+            vm_name = self.api.VM.get_name_label(vm)
+            vm_list[vm_name] = vm
+
+        return vm_list
 
 
 class SrController:
@@ -55,7 +108,6 @@ class SrController:
 
 
 class VmController:
-
     @staticmethod
     def backup_vm(vm_id):
         vm = VmModel.get_vm(vm_id)

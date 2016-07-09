@@ -22,9 +22,9 @@ def ssh_disconnect(ssh_session):
     print('disconnected')
 
 
-def connect():
-    session = Session('http://' + HOST)
-    session.login_with_password(USER, PASSWORD)
+def connect(user, password, host):
+    session = Session('http://' + host)
+    session.login_with_password(user, password)
     print('connected')
 
     return session

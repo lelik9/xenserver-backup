@@ -1,3 +1,4 @@
+from __future__ import print_function
 from app import mongo
 from bson import ObjectId
 
@@ -7,16 +8,16 @@ class HostsModel:
         pass
 
     @staticmethod
-    def add_managment_host(args):
+    def add_host(args):
         id = mongo.db.hosts.insert(args)
 
         return str(id)
 
     @staticmethod
-    def get_managment_hosts():
+    def get_hosts():
         nodes = []
 
-        for node in mongo.db.hosts.find():
+        for node in mongo.db.hosts.find({}, {'_id': 0}):
             nodes.append(node)
 
         return nodes
@@ -26,6 +27,10 @@ class HostsModel:
         host = mongo.db.hosts.find_one({'_id': ObjectId(id)})
 
         return host
+
+    @staticmethod
+    def get_pool(pool_name):
+        return mongo.db.hosts.find_one({'pool': pool_name})
 
 
 class VmModel:

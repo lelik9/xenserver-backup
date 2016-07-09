@@ -34,8 +34,11 @@ def storage():
 @app.route('/hosts/', methods=['GET'])
 def hosts():
     if 'get' in request.args.keys():
-        return json.dumps([{'host': 'tst', 'pool': 'ts', 'ip': '1.1.1.2'},
-                           {'host': 'tst1', 'pool': 'ts', 'ip': '1.1.1.3'}])
+        try:
+            hosts = HostsModel.get_hosts()
+            return response(result=hosts, resp_type='success')
+        except BaseException as e:
+            return response(result=str(e), resp_type='error')
     return render_template('hosts.html')
 
 

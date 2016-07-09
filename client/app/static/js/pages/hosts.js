@@ -10,10 +10,12 @@ $('#hostForm').submit(function(){
         dataType: 'json',
         start: $progress.show(),
         complete: function (data) {
+            var res = data['responseJSON'];
+            if(res['type'] == 'success'){
+                $('#hostModal').modal('hide');
+            }
             $progress.hide();
-            $('#hostModal').modal('hide');
-            var mes = data['responseJSON'];
-            $.notify(mes['message'], mes['type']);
+            $.notify(res['result'], res['type']);
         }
     });
     return false;
@@ -39,18 +41,29 @@ function fillTable(){
         data: {'get': 'table'},
         dataType: 'json',
         success: function (data) {
-            $('td').remove();
-            for (var i=0; i<data.length; i++){
-                $('#hostsTable').append(
-                        '<tr>' +
-                            '<td><div class="checkbox"><label>' +
-                                '<input type="checkbox" name="check" value="'+ data[i].uuid+'">'+data[i].host+
-                            '</label></div></td>' +
-                            '<td>'+data[i].pool+'</td>' +
-                            '<td>'+data[i].ip+'</td>' +
-                        '</tr>');
-            }
+            console.log(data.type);
+            if(data.type.localeCompare('success') == 0) {
+                $('td').remove();
 
+                var res = data.result;
+
+                for (var a = 0; a < res.length; a++) {
+                    var hosts = res[a].hosts;
+
+                    for (var i = 0; i < hosts.length; i++) {
+                        $('#hostsTable').append(
+                            '<tr>' +
+                            '<td><div class="checkbox"><label>' +
+                            '<input type="checkbox" name="check" value="' + hosts[i].obj + '">' + hosts[i].name +
+                            '</label></div></td>' +
+                            '<td>' + hosts[i].ip + '</td>' +
+                            '<td>' + hosts[i].live + '</td>' +
+                            '<td>' + (hosts[i].mem_total / 1000000 >> 0) + '/' + (hosts[i].mem_free / 1000000 >> 0) + ' MB</td>' +
+                            '<td>' + res[a].pool + '</td>' +
+                            '</tr>');
+                    }
+                }
+            }
         }
     });
 }
