@@ -13,6 +13,7 @@ $('#hostForm').submit(function(){
             var res = data['responseJSON'];
             if(res['type'] == 'success'){
                 $('#hostModal').modal('hide');
+                fillTable()
             }
             $progress.hide();
             $.notify(res['result'], res['type']);
