@@ -2,12 +2,20 @@
 from __future__ import print_function
 import json
 from flask import request
+from pymongo import errors
 
 from app import app
 from controller import HostController
+from models import HostsModel
 
 
 def response(result=None, resp_type='success'):
+    """
+
+    :param result:
+    :param resp_type:
+    :return:
+    """
     print(result)
     return json.dumps({u'result': result, 'type': resp_type})
 
@@ -37,10 +45,55 @@ def rm_host():
 
     :return:
     """
-    print(len(request.form))
-    for a in request.form:
-        print(a)
-    return json.dumps({'message': 'Add host SUCCESS', 'type': 'success'})
+    req = dict(request.form)
+    result = 'Remove pool success'
+    res_type = 'success'
+
+    try:
+        for host in req['check']:
+            try:
+                r = HostsModel.rm_pool(host)
+                if r['ok'] == 0:
+                    result = 'Remove pool failed'
+                    res_type = 'error'
+            except errors as e:
+                result = 'Remove pool failed'
+                res_type = 'error'
+    except KeyError:
+        result = 'Please select host'
+        res_type = 'error'
+
+    return response(result=result, resp_type=res_type)
+
+
+@app.route('/vms/', methods=['POST'])
+def scan_vm():
+    ip = request.form['ip']
+    login = request.form['login']
+    password = request.form['password']
+
+    try:
+        host = HostController(login, password, ip)
+        host.scan_vm()
+    except BaseException as e:
+        return response(result=str(e), resp_type='error')
+
+    return response(result='Scanning VM completed', resp_type='success')
+
+
+@app.route('/sr/', methods=['POST'])
+def scan_sr():
+    ip = request.form['ip']
+    login = request.form['login']
+    password = request.form['password']
+
+    try:
+        host = HostController(login, password, ip)
+        host.scan_sr()
+    except BaseException as e:
+        return response(result=str(e), resp_type='error')
+
+    return response(result='Scanning SR completed', resp_type='success')
 
 
 @app.route('/backup/', methods=['POST'])

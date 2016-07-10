@@ -23,7 +23,7 @@
             <form class="form-horizontal" method="post" id="hostForm" action="/host/">
                 <!-- IP field -->
                 <div class="form-group">
-                  <label for="inputIP" class="col-sm-2 control-label">Host IP</label>
+                  <label for="inputIP" class="col-sm-2 control-label">Pool master IP</label>
                   <div class="col-sm-10">
                     <input required pattern="^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$" type="text" class="form-control" name="ip" id="inputIP"
                             placeholder="IP address 99.88.77.66">
@@ -63,7 +63,24 @@
       </div><!-- /.modal-dialog -->
     </div><!-- /.modal -->
 
-    <!-- Rm Host modal window  -->
+    <div class="modal modal-danger" tabindex="-1" role="dialog" id="rmModal">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title">Remove</h4>
+          </div>
+          <div class="modal-body">
+            <p>A you sure want to removing pool with all hosts and VM's in it?</p>
+          </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline pull-left"
+                        data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-outline pull-right" id="yesButton">Yes</button>
+            </div>
+        </div>
+      </div>
+    </div>
+
     <div class="box">
     <div class="box-body table-responsive no-padding">
         <table class="table table-hover" width="100%" id="hostsTable">

@@ -3,37 +3,65 @@
  */
 $('#hostForm').submit(function(){
     var $progress = $('#progress');
+    var host = $(this).serializeArray()
     $.ajax({
         url: '/host/',
         type: 'POST',
-        data: $(this).serializeArray(),
+        data: host,
         dataType: 'json',
         start: $progress.show(),
         complete: function (data) {
             var res = data['responseJSON'];
-            if(res['type'] == 'success'){
-                $('#hostModal').modal('hide');
-                fillTable()
-            }
+
             $progress.hide();
             $.notify(res['result'], res['type']);
+            if(res['type'] == 'success'){
+                $('#hostModal').modal('hide');
+                fillTable();
+
+                $.notify("Started scanning for VM's...", 'info');
+                scan('/vms/', host);
+
+                $.notify("Started scanning for SR's...", 'info');
+                scan('/sr/', host);
+            }
         }
     });
     return false;
 });
 
 $('#rmHost').on('click', function(){
+    $('#rmModal').modal();
+    $('#yesButton').on('click', function () {
+        $.ajax({
+            url: '/host/',
+            type: 'DELETE',
+            data: $('input[name=check]:checked'),
+            dataType: 'json',
+            complete: function (data) {
+                var res = data['responseJSON'];
+                if(res['type'] == 'success'){
+                    fillTable()
+                }
+                $('#rmModal').modal('hide');
+                $.notify(res['result'], res['type']);
+            }
+        });
+    })
+});
+
+function scan(url, host) {
     $.ajax({
-        url: '/host/',
-        type: 'DELETE',
-        data: $('input[name=check]:checked'),
+        url:url,
+        type: 'POST',
+        data: host,
         dataType: 'json',
         complete: function (data) {
-            var mes = data['responseJSON'];
-            $.notify(mes['message'], mes['type']);
+            var res = data['responseJSON'];
+            $.notify(res['result'], res['type']);
         }
-    });
-});
+    })
+}
 
 function fillTable(){
     $.ajax({

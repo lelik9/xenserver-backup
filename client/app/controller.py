@@ -25,6 +25,8 @@ def _establish_session(host_id):
 class HostController:
     def __init__(self, user, password, ip):
         self.ip = ip
+        self.password = password
+        self.user = user
 
         try:
             self.session = sessions.connect(user, password, ip)
@@ -36,6 +38,9 @@ class HostController:
         self.api = self.session.xenapi
 
     def add_host(self):
+        """
+            Add hosts from target pool
+        """
         hosts = []
         try:
             hosts_obj = self.api.host.get_all()
@@ -43,27 +48,27 @@ class HostController:
             pool_name = self.api.pool.get_name_label(pool_obj)
 
             is_pool_exist = HostsModel.get_pool(pool_name)
-            print(is_pool_exist)
+
             if is_pool_exist is None:
                 for host_obj in hosts_obj:
                     metrics = self.api.host.get_metrics(host_obj)
-                    ip = self.api.host.get_address(host_obj)
                     host = {
                         'obj': host_obj,
                         'metrics': metrics,
                         'name': self.api.host.get_hostname(host_obj),
-                        'ip': ip,
+                        'ip': self.api.host.get_address(host_obj),
                         'mem_total': int(self.api.host_metrics.get_memory_total(metrics)),
                         'mem_free': int(self.api.host_metrics.get_memory_free(metrics)),
                         'live': self.api.host_metrics.get_live(metrics)
                         }
                     hosts.append(host)
 
-                vms = self.get_host_vms()
                 result = {
                     'pool': pool_name,
                     'hosts': hosts,
-                    'vms': vms
+                    'master': self.ip,
+                    'login': self.user,
+                    'password': self.password
                 }
                 HostsModel.add_host(result)
             else:
@@ -76,19 +81,71 @@ class HostController:
 
         sessions.disconnect(self.session)
 
-    def get_host_vms(self):
-        vm_list = {}
-        all_vms = self.api.VM.get_all()
-        vms = filter(lambda x: (not self.api.VM.get_is_a_template(x)) and
-                               ('Control domain on host:' not in
-                                self.api.VM.get_name_label(x)),
-                     all_vms)
+    def scan_vm(self):
+        """
+            Scanning for VM's in existing pool
+        """
+        try:
+            vm_list = []
+            all_vms = self.api.VM.get_all()
+            vms = filter(lambda x: (not self.api.VM.get_is_a_template(x)) and
+                                   ('Control domain on host:' not in
+                                    self.api.VM.get_name_label(x)),
+                         all_vms)
 
-        for vm in vms:
-            vm_name = self.api.VM.get_name_label(vm)
-            vm_list[vm_name] = vm
+            for vm in vms:
+                metrics = self.api.VM.get_metrics(vm)
 
-        return vm_list
+                vm_info = {
+                    'obj': vm,
+                    'name': self.api.VM.get_name_label(vm),
+                    'metrics': metrics,
+                    'memory': int(self.api.VM_metrics.get_memory_actual(metrics)),
+                    'CPU': int(self.api.VM_metrics.get_VCPUs_number(metrics)),
+                    'state': self.api.VM_metrics.get_state(metrics)
+                }
+                vm_list.append(vm_info)
+
+            res = HostsModel.set_host_info(self.ip, 'vm', vm_list)
+            if res['nModified'] == 0:
+                error = u"Scan VM's failed. Unable to update DB"
+                app.LOGGER.error(error)
+                raise BaseException(error)
+        except BaseException as e:
+            error = u"Scan VM's failed, cause: {}".format(str(e))
+            app.LOGGER.error(error)
+            raise BaseException(error)
+
+    def scan_sr(self):
+        """
+            Scanning for SR in current pool without 'iso' and 'udev' type.
+        """
+        try:
+            sr_list = []
+            all_sr = self.api.SR.get_all()
+
+            for sr in all_sr:
+                sr_type = self.api.SR.get_type(sr)
+                if sr_type not in ('udev', 'iso'):
+                    sr_info = {
+                        'obj': sr,
+                        'name': self.api.SR.get_name_label(sr),
+                        'type': sr_type,
+                        'size': self.api.SR.get_physical_size(sr),
+                        'utilization': self.api.SR.get_physical_utilisation(sr),
+                        'shared': self.api.SR.get_shared(sr)
+                    }
+                    sr_list.append(sr_info)
+
+            res = HostsModel.set_host_info(self.ip, 'sr', sr_list)
+            if res['nModified'] == 0:
+                error = u"Scan SR failed. Unable to update DB"
+                app.LOGGER.error(error)
+                raise BaseException(error)
+        except BaseException as e:
+            error = u"Scan SR failed, cause: {}".format(str(e))
+            app.LOGGER.error(error)
+            raise BaseException(error)
 
 
 class SrController:

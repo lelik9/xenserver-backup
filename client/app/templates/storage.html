@@ -1,29 +1,59 @@
 {% extends "base.html" %}
+{% block page_title %}Storage{% endblock %}
 {% block content %}
-	<table class="table table-striped" border="2" align="left" width="100%">
-	<tr>
-		<h1 align="center">Storage</h1>
-	</tr>
-	<tr>
-		<h2 align="center">Add backup storage</h2>
-		<form name="add_form" role="form" method="get">
-			<select name="protocol">
-				<option value="smb">smb</option>
-				<option value="nfs">nfs</option>
-				<option value="folder">folder</option>
-			</select>
-			storage name: <input type="text" name="sr_name">
-			share name: <input type="text" name="share">
-			user*: <input type="text" name="user">
-			password*: <input type="password" name="password">
-			<button type="submit" class="btn btn-default">add</button>
-			<br>
-			*username and password if needed
-		</form>
-	</tr>
-	<tr>
+{#	<table class="table table-striped" border="2" align="left" width="100%">#}
+{#	<tr>#}
+{#		<h1 align="center">Storage</h1>#}
+{#	</tr>#}
+{#	<tr>#}
+{#		<h2 align="center">Add backup storage</h2>#}
+{#		<form name="add_form" role="form" method="get">#}
+{#			<select name="protocol">#}
+{#				<option value="smb">smb</option>#}
+{#				<option value="nfs">nfs</option>#}
+{#				<option value="folder">folder</option>#}
+{#			</select>#}
+{#			storage name: <input type="text" name="sr_name">#}
+{#			share name: <input type="text" name="share">#}
+{#			user*: <input type="text" name="user">#}
+{#			password*: <input type="password" name="password">#}
+{#			<button type="submit" class="btn btn-default">add</button>#}
+{#			<br>#}
+{#			*username and password if needed#}
+{#		</form>#}
+{#	</tr>#}
+{#	<tr>#}
+{##}
+{#	</tr>#}
+{##}
+{#	</table>#}
+    <div class="btn-box-tool" align="right">
+        <button type="button" class="btn bg-green btn-flat" data-toggle="modal" data-target="#hostModal">
+            ADD
+        </button>
+        <button type="button" class="btn bg-red btn-flat" id="rmHost">
+            Remove
+        </button>
+    </div>
 
-	</tr>
+    <h2>Backup storage</h2>
+    <h2>Host storage</h2>
 
-	</table>
+        <div class="box">
+        <div class="box-body table-responsive no-padding">
+            <table class="table table-hover" width="100%" id="hostSrTable">
+                <tr>
+                    <th>SR</th>
+                    <th>Type</th>
+                    <th>Size/Used MB</th>
+                    <th>Share</th>
+                    <th>Pool</th>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+{% endblock %}
+{% block script %}
+    <script src="../static/js/pages/sr.js"></script>
 {% endblock %}

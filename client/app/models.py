@@ -17,20 +17,49 @@ class HostsModel:
     def get_hosts():
         nodes = []
 
-        for node in mongo.db.hosts.find({}, {'_id': 0}):
+        for node in mongo.db.hosts.find({}, {'_id': 0, 'vm': 0, 'sr': 0, 'login': 0,
+                                             'password': 0}):
             nodes.append(node)
 
         return nodes
 
     @staticmethod
-    def get_host(id):
-        host = mongo.db.hosts.find_one({'_id': ObjectId(id)})
+    def get_vm():
+        vm = []
 
-        return host
+        for node in mongo.db.hosts.find({}, {'_id': 0, 'hosts': 0, 'sr': 0, 'login': 0,
+                                             'password': 0}):
+            vm.append(node)
+
+        return vm
+
+    @staticmethod
+    def get_sr():
+        sr = []
+
+        for node in mongo.db.hosts.find({}, {'_id': 0, 'hosts': 0, 'vm': 0, 'login': 0,
+                                             'password': 0}):
+            sr.append(node)
+
+        return sr
+
+    # @staticmethod
+    # def get_host(id):
+    #     host = mongo.db.hosts.find_one({'_id': ObjectId(id)})
+    #
+    #     return host
+
+    @staticmethod
+    def set_host_info(host_ip, key, info):
+        return mongo.db.hosts.update({'master': host_ip}, {'$set': {key: info}})
 
     @staticmethod
     def get_pool(pool_name):
         return mongo.db.hosts.find_one({'pool': pool_name})
+
+    @staticmethod
+    def rm_pool(host):
+        return mongo.db.hosts.remove({'hosts.obj': host})
 
 
 class VmModel:
