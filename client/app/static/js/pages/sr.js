@@ -31,3 +31,21 @@ function fillHostSrTable(){
     });
 }
 fillHostSrTable();
+
+function showUserInput(){
+    var share = document.getElementById('protocolSelect').value;
+
+    if (share.localeCompare('smb') == 0){
+        document.getElementById('loginGroup').style.display = 'block';
+        document.getElementById('passwordGroup').style.display = 'block';
+        document.getElementById('inputPath').placeholder="\\\\10.10.10.10\\smb"
+    }else if(share.localeCompare('nfs') == 0) {
+        document.getElementById('loginGroup').style.display = 'none';
+        document.getElementById('passwordGroup').style.display = 'none';
+        document.getElementById('inputPath').placeholder="10.10.10.10:/nfs"
+    }else if(share.localeCompare('folder') == 0) {
+        document.getElementById('loginGroup').style.display = 'none';
+        document.getElementById('passwordGroup').style.display = 'none';
+        document.getElementById('inputPath').placeholder="/backup/path"
+    }
+}
