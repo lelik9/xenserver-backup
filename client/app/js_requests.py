@@ -6,7 +6,7 @@ from pymongo import errors
 
 from app import app
 from controller import HostController
-from models import HostsModel
+from models import HostsModel, BackupStorageModel
 
 
 def response(result=None, resp_type='success'):
@@ -94,6 +94,23 @@ def scan_sr():
         return response(result=str(e), resp_type='error')
 
     return response(result='Scanning SR completed', resp_type='success')
+
+
+@app.route('/backup_sr/', methods=['POST'])
+def add_backup_sr():
+    try:
+        BackupStorageModel.add_storage({
+            '_id': request.form['name'],
+            'share_path': request.form['ip'],
+            'sr_type': request.form['protocol'],
+            'login': request.form['login'],
+            'password': request.form['password'],
+        })
+        return response(result='Add backup SR completed', resp_type='success')
+    except errors.DuplicateKeyError:
+        return response(result='SR with that name already exists', resp_type='error')
+    except BaseException as e:
+        return response(result='Add backup sr failed. {}'.format(str(e)), resp_type='error')
 
 
 @app.route('/backup/', methods=['POST'])
