@@ -3,7 +3,7 @@
  */
 $('#hostForm').submit(function(){
     var $progress = $('#progress');
-    var host = $(this).serializeArray()
+    var host = $(this).serializeArray();
     $.ajax({
         url: '/host/',
         type: 'POST',

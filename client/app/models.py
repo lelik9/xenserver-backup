@@ -114,8 +114,8 @@ class BackupModel:
 
 class BackupStorageModel:
     @staticmethod
-    def add_storage(**kwargs):
-        mongo.db.backup_sr.insert(kwargs)
+    def add_storage(obj):
+        mongo.db.backup_sr.insert(obj)
 
 
 class StorageModel:
