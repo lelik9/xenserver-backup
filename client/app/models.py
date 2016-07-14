@@ -4,6 +4,47 @@ from bson import ObjectId
 
 
 class HostsModel:
+    """
+        Host model:
+            {
+            "master" : Pool master IP: str,
+            "hosts" : [
+                        {
+                            "obj" : xen host object: str,
+                            "name" : host name: str,
+                            "mem_free" : host free memory: int,
+                            "ip" : host IP address: str,
+                            "metrics" : xen metrics object: str,
+                            "live" : host state: boolean,
+                            "mem_total" : total host memory: int
+                        },
+                    ],
+            "login" : login of pool master host: str,
+            "password" : password of pool master host: str,
+            "pool" : pool name: str,
+            "vm" : [
+                        {
+                            "obj" : xen VM object: str,
+                            "name" : VM name,
+                            "metrics" : xen metrics object: str,
+                            "state" : VM state: list,
+                            "memory" : memory of VM: int,
+                            "CPU" : number of VM CPU: int
+                        },
+                    ],
+            "sr" : [
+                        {
+                            "obj" : xen SR object: str,
+                            "name" : SR name,
+                            "utilization" : Used space on disk: int,
+                            "shared" : is SR shared: boolean,
+                            "type" : SR type: str,
+                            "size" : total SR size: int
+                        },
+                    ]
+            }
+
+    """
     def __init__(self):
         pass
 
@@ -43,11 +84,11 @@ class HostsModel:
 
         return sr
 
-    # @staticmethod
-    # def get_host(id):
-    #     host = mongo.db.hosts.find_one({'_id': ObjectId(id)})
-    #
-    #     return host
+    @staticmethod
+    def get_host_of_vm(vm_obj):
+        host = mongo.db.hosts.find_one({'vm.obj': vm_obj})
+
+        return host
 
     @staticmethod
     def set_host_info(host_ip, key, info):
@@ -116,7 +157,7 @@ class BackupStorageModel:
     """
         Backup storage model:
             {
-            '_id': name of backup storage,
+            '_id': name of backup_restore storage,
             'share_path': share name,
             'sr_type': share type (smb, nfs, folder),
             'login': login for smb share,

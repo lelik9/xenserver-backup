@@ -2,7 +2,7 @@ from flask import render_template, flash, redirect, request, url_for, send_file
 from app import app
 from forms import HostsForm, VmsForm, VmForm
 from models import HostsModel, BackupStorageModel
-from controller import HostController, VmController
+from controller import HostController, VmBackupController
 
 from js_requests import *
 
@@ -63,7 +63,7 @@ def vms():
 def vm(id):
     vm_form = VmForm(id)
     vm_form.alert = False
-    vm_controller = VmController()
+    vm_controller = VmBackupController()
 
     if vm_form.backup_btn.data:
         vm_form.backup_info = vm_controller.backup_vm(id)

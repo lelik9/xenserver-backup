@@ -1,25 +1,27 @@
 from __future__ import print_function
-from models import HostsModel, VmModel, BackupModel
+
 import sys
 from datetime import datetime
 
-sys.path.append('../backup-restore/')
+from models import HostsModel, VmModel, BackupModel
+
 from app import app
-from restore import Restore
-import backup, sessions
+from backup_restore.restore import Restore
+from backup_restore import sessions
+from backup_restore.backup import VmBackup
 
 
-def _establish_session(host_id):
-    host = HostsModel.get_host(host_id)
-
-    sessions.HOST = host['host_ip']
-    sessions.USER = host['login']
-    sessions.PASSWORD = host['password']
-
-    session = sessions.connect()
-    ssh_session = sessions.ssh_connect()
-
-    return session, ssh_session
+# def _establish_session(host_id):
+#     host = HostsModel.get_host(host_id)
+#
+#     sessions.HOST = host['host_ip']
+#     sessions.USER = host['login']
+#     sessions.PASSWORD = host['password']
+#
+#     session = sessions.connect()
+#     ssh_session = sessions.ssh_connect()
+#
+#     return session, ssh_session
 
 
 class HostController:
@@ -131,8 +133,8 @@ class HostController:
                         'obj': sr,
                         'name': self.api.SR.get_name_label(sr),
                         'type': sr_type,
-                        'size': self.api.SR.get_physical_size(sr),
-                        'utilization': self.api.SR.get_physical_utilisation(sr),
+                        'size': int(self.api.SR.get_physical_size(sr)),
+                        'utilization': int(self.api.SR.get_physical_utilisation(sr)),
                         'shared': self.api.SR.get_shared(sr)
                     }
                     sr_list.append(sr_info)
@@ -148,49 +150,30 @@ class HostController:
             raise BaseException(error)
 
 
-class SrController:
-    def scan_sr(self, host_id):
-        session, ssh_session = _establish_session(host_id)
-
-        sr_s = session.xenapi.SR.get_all()
-        all_sr = filter(lambda x: (session.xenapi.SR.get_type(x) != 'udev') or
-                                  (session.xenapi.SR.get_type(x) != 'iso'),
-                        sr_s)
-
-        for sr in all_sr:
-            name = session.xenapi.SR.get_name_label(sr)
-            type = session.xenapi.SR.get_type(sr)
-            size = session.xenapi.SR.get_physical_size(sr)
-            utilization = session.xenapi.SR.get_physical_utilisation(sr)
-
-
-class VmController:
+class VmBackupController:
     @staticmethod
-    def backup_vm(vm_id):
-        vm = VmModel.get_vm(vm_id)
-        host_id = vm['host_id']
-        session, ssh_session = _establish_session(host_id)
+    def backup_vm(vm_obj, backup_sr):
+        vm_backup = VmBackup(vm_obj=vm_obj, backup_sr=backup_sr)
 
-        print(vm)
-        try:
-            vdis = backup.make_backup(session=session,
-                                      ssh_session=ssh_session,
-                                      vm_obj=vm['vm_object'],
-                                      vm_name=vm['vm_name'])
-        except Exception as e:
-            print(e)
-            backup_result = {'result': 'fail'}
-            return backup_result
-
-        BackupModel.add_backup_info(vm_name=vm['vm_name'],
-                                    vm_id=vm_id,
-                                    vdis=vdis,
-                                    date=datetime.now().strftime(
-                                        "%Y-%m-%d_%H-%m"))
-
-        sessions.disconnect(session)
-        backup_result = {'result': 'ok'}
-        return backup_result
+        # try:
+        #     vdis = backup_restore.make_backup(session=session,
+        #                                       ssh_session=ssh_session,
+        #                                       vm_obj=vm['vm_object'],
+        #                                       vm_name=vm['vm_name'])
+        # except Exception as e:
+        #     print(e)
+        #     backup_result = {'result': 'fail'}
+        #     return backup_result
+        #
+        # BackupModel.add_backup_info(vm_name=vm['vm_name'],
+        #                             vm_id=vm_id,
+        #                             vdis=vdis,
+        #                             date=datetime.now().strftime(
+        #                                 "%Y-%m-%d_%H-%m"))
+        #
+        # sessions.disconnect(session)
+        # backup_result = {'result': 'ok'}
+        # return backup_result
 
     def remove_backup(self, backup_id, vm_id):
         vm = VmModel.get_vm(vm_id)
@@ -201,7 +184,7 @@ class VmController:
             res = list(BackupModel.get_backup_info(backup_id))[0]
 
             BackupModel.remove_backup(backup_id)
-            backup.mount_folder(ssh_session)
+            backup_restore.mount_folder(ssh_session)
 
             for vdi in res['vdis']:
                 stdin, stdout, stderr = ssh_session.exec_command(
@@ -210,7 +193,7 @@ class VmController:
                 err = stderr.read()
                 if err is not None:
                     print(err)
-            backup.umount_folder(ssh_session)
+            backup_restore.umount_folder(ssh_session)
         except:
             pass
         finally:
@@ -230,3 +213,18 @@ class VmController:
 
         except Exception as e:
             print('restore fail ', e)
+
+# class SrController:
+#     def scan_sr(self, host_id):
+#         session, ssh_session = _establish_session(host_id)
+#
+#         sr_s = session.xenapi.SR.get_all()
+#         all_sr = filter(lambda x: (session.xenapi.SR.get_type(x) != 'udev') or
+#                                   (session.xenapi.SR.get_type(x) != 'iso'),
+#                         sr_s)
+#
+#         for sr in all_sr:
+#             name = session.xenapi.SR.get_name_label(sr)
+#             type = session.xenapi.SR.get_type(sr)
+#             size = session.xenapi.SR.get_physical_size(sr)
+#             utilization = session.xenapi.SR.get_physical_utilisation(sr)

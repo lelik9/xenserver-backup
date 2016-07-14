@@ -45,11 +45,11 @@ $('#yesButton').on('click', function () {
      });
     var data = {vm: vm,
                 sr: document.getElementById('srSelect').value};
-    request('/backup/', 'POST', data, onBackupStart, onBackupSuccess);
+    request('/backup_restore/', 'POST', data, onBackupStart, onBackupSuccess);
 });
 
 function onBackupStart() {
-    $.notify('VM backup start', 'info')
+    $.notify('VM backup_restore start', 'info')
 }
 function onBackupSuccess(data) {
     var res = data['responseJSON'];

@@ -8,7 +8,7 @@ def create_logger():
     """
     Creates a logging object and returns it
     """
-    logger = logging.getLogger("backup")
+    logger = logging.getLogger("backup_restore")
     logger.setLevel(logging.INFO)
 
     # create the logging file handler

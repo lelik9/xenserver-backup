@@ -79,7 +79,7 @@ function showUserInput(){
     }else if(share.localeCompare('nfs') == 0) {
         inputPath.placeholder="10.10.10.10:/nfs"
     }else if(share.localeCompare('folder') == 0) {
-        inputPath.placeholder="/backup/path"
+        inputPath.placeholder="/backup_restore/path"
     }
 }
 

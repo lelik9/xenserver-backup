@@ -4,7 +4,7 @@ from flask import request
 from pymongo import errors
 
 from app import app
-from controller import HostController
+from controller import HostController, VmBackupController
 from models import HostsModel, BackupStorageModel
 
 
@@ -105,14 +105,14 @@ def add_backup_sr():
             'login': request.form['login'],
             'password': request.form['password'],
         })
-        return response(result='Add backup SR completed', resp_type='success')
+        return response(result='Add backup_restore SR completed', resp_type='success')
     except errors.DuplicateKeyError:
         return response(result='SR with that name already exists', resp_type='error')
     except BaseException as e:
-        return response(result='Add backup sr failed. {}'.format(str(e)), resp_type='error')
+        return response(result='Add backup_restore sr failed. {}'.format(str(e)), resp_type='error')
 
 
-@app.route('/backup/', methods=['POST'])
+@app.route('/backup_restore/', methods=['POST'])
 def backup_vm():
     """
 
@@ -124,8 +124,11 @@ def backup_vm():
 
     try:
         for vm in req['vm[]']:
-            print(vm)
+            VmBackupController.backup_vm(vm_obj=vm, backup_sr=req['sr'])
     except KeyError:
         result = 'Please select VM'
+        res_type = 'error'
+    except BaseException as e:
+        result = 'Backup failed cause: {}'.format(str(e))
         res_type = 'error'
     return response(result=result, resp_type=res_type)

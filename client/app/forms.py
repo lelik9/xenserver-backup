@@ -23,7 +23,7 @@ class VmsForm(Form):
 class VmForm(Form):
 	vm = None
 	backups = None
-	backup_btn = SubmitField('backup now')
+	backup_btn = SubmitField('backup_restore now')
 	sel_backup = RadioField()
 
 	def __init__(self, id):
