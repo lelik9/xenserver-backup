@@ -3,7 +3,7 @@ from __future__ import print_function
 import sys
 from datetime import datetime
 
-from models import HostsModel, VmModel, BackupModel
+from models import HostsModel, VmModel, BackupModel, BackupStorageModel
 
 from app import app
 from backup_restore.restore import Restore
@@ -30,13 +30,7 @@ class HostController:
         self.password = password
         self.user = user
 
-        try:
-            self.session = sessions.connect(user, password, ip)
-        except BaseException as e:
-            # error = 'Host {} connection failed, cause: {}'.format(self.ip, str(e).encode('utf-8'))
-            # app.LOGGER.error(error)
-            raise BaseException('Host {} connection failed!'.format(self.ip))
-
+        self.session = sessions.connect(user, password, ip)
         self.api = self.session.xenapi
 
     def add_host(self):
@@ -77,7 +71,7 @@ class HostController:
                 raise BaseException('Pool already exist. For add new host in pool use REFRESH '
                                     'button')
         except BaseException as e:
-            error = u'Add host {} failed, cause: {}'.format(self.ip, str(e))
+            error = 'Add host {} failed, cause: {}'.format(self.ip, str(e))
             app.LOGGER.error(error)
             raise BaseException(error)
 
@@ -153,7 +147,16 @@ class HostController:
 class VmBackupController:
     @staticmethod
     def backup_vm(vm_obj, backup_sr):
+        sr = BackupStorageModel.get_backup_sr(backup_sr)
+
         vm_backup = VmBackup(vm_obj=vm_obj, backup_sr=backup_sr)
+
+        try:
+            vm_backup.make_backup(backup_sr=sr)
+        except BaseException as e:
+            error = u"VM backup failed, cause: {}".format(str(e))
+            app.LOGGER.error(error)
+            raise BaseException(error)
 
         # try:
         #     vdis = backup_restore.make_backup(session=session,

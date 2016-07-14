@@ -124,11 +124,11 @@ def backup_vm():
 
     try:
         for vm in req['vm[]']:
-            VmBackupController.backup_vm(vm_obj=vm, backup_sr=req['sr'])
+            VmBackupController.backup_vm(vm_obj=vm, backup_sr=req['sr'][0])
     except KeyError:
         result = 'Please select VM'
         res_type = 'error'
     except BaseException as e:
-        result = 'Backup failed cause: {}'.format(str(e))
+        result = str(e)
         res_type = 'error'
     return response(result=result, resp_type=res_type)

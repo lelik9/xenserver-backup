@@ -46,7 +46,7 @@ def connect(user, password, host):
 def disconnect(session):
     try:
         session.logout()
-        app.LOGGER.info('Disconnect xen session {} done.'.format(session))
+        app.LOGGER.info('Disconnect xen session done.')
     except BaseException as e:
-        error = 'Disconnect xen session {} failed; cause: {}'.format(session, str(e))
+        error = 'Disconnect xen session failed; cause: {}'.format(str(e))
         app.LOGGER.error(error)

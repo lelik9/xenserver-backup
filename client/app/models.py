@@ -50,9 +50,7 @@ class HostsModel:
 
     @staticmethod
     def add_host(args):
-        id = mongo.db.hosts.insert(args)
-
-        return str(id)
+        mongo.db.hosts.insert(args)
 
     @staticmethod
     def get_hosts():
@@ -168,7 +166,6 @@ class BackupStorageModel:
     def add_storage(obj):
         mongo.db.backup_sr.insert(obj)
 
-
     @staticmethod
     def get_backup_sr_wo_login():
         srs = []
@@ -177,6 +174,10 @@ class BackupStorageModel:
             srs.append(sr)
 
         return srs
+
+    @staticmethod
+    def get_backup_sr(sr_name):
+        return mongo.db.backup_sr.find_one({'_id': sr_name})
 
 # class StorageModel:
 #

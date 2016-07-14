@@ -12,15 +12,13 @@ ISCSI_SR_PATH = '/dev/VG_XenStorage-'
 BACKUP_PATH = '/media'
 
 
-LOGGER = app.LOGGER
-
-
 class VmBackup:
     """
         Class fo backup_restore VM
     """
 
     def __init__(self, vm_obj, backup_sr):
+        self.vm_obj = vm_obj
         self.session, self.ssh_session = self.__establish_session(vm_obj)
         self.backup_sr = backup_sr
         self.api = self.session.xenapi
@@ -85,30 +83,32 @@ class VmBackup:
     def __create_snapshot(self, vm, vm_name):
         try:
             snap = self.api.VM.snapshot(vm, vm_name)
-            LOGGER.info('Created snapshot {}'.format(snap))
+            app.LOGGER.info('Created snapshot {}'.format(snap))
 
             return snap
         except Exception as e:
-            raise Exception('Creating snapshot error. Reason: {}'.format(str(e)))
+            raise Exception('Creating VM {} snapshot error; cause: {}'.format(vm_name, str(e)))
 
-    def __mount_folder(self):
-        if "nfs" in MOUNT_PATH.keys():
+    def __mount_folder(self, backup_sr):
+        mount_path = backup_sr['share_path']
+
+        if backup_sr['sr_type'] == "nfs":
             try:
-                stdin, stdout, stderr = self.ssh_session.exec_command("mount -t nfs " + '"' +
-                                                                 MOUNT_PATH['nfs'] + '" ' +
-                                                                 BACKUP_PATH)
-                LOGGER.info('Mounted {} to {}'.format(MOUNT_PATH['nfs'], BACKUP_PATH))
+                self.ssh_session.exec_command("mount -t nfs " + '"' + mount_path + '" ' +
+                                              BACKUP_PATH)
+
+                app.LOGGER.info('Mounted {} to {}'.format(mount_path, BACKUP_PATH))
             except Exception as e:
-                LOGGER.error('Failed mount folder: {}; cause: {}, {}, {}'.format(
-                    MOUNT_PATH['nfs'], e, stdout.read(), stderr.read()
-                ))
+                error = 'Failed mount folder: {}; cause: {}'.format(mount_path, str(e))
+                app.LOGGER.error(error)
+                raise BaseException(error)
 
     def __umount_folder(self):
         try:
-            stdin, stdout, stderr = self.ssh_session.exec_command(
-                "umount " + BACKUP_PATH)
+            self.ssh_session.exec_command("umount " + BACKUP_PATH)
+            app.LOGGER.info('{} unmounted'.format(BACKUP_PATH))
         except Exception as e:
-            print(e, stdout.read(), stderr.read())
+            app.LOGGER.error('Failed to unmount folder: {}; cause: {}'.format(BACKUP_PATH, e))
 
     def __copy_disk(self, sr, vdi, vdi_uuid, ssh_session, backup_dir):
         try:
@@ -146,26 +146,27 @@ class VmBackup:
         error = stderr.read()
 
         if error is not None:
-            raise Exception('Failed to create backup_restore dir: ' + error)
+            raise Exception(error)
 
-    def make_backup(self, ssh_session, vm_obj, vm_name):
-        self.__mount_folder()
+    def make_backup(self, backup_sr):
+        self.__mount_folder(backup_sr)
+        vm_name = self.api.VM.get_name_label(self.vm_obj)
 
+        backup_dir = BACKUP_PATH + '/' + vm_name
         try:
-            backup_dir = BACKUP_PATH + '/' + vm_name
-            self.__create_backup_dir(ssh_session, backup_dir)
+            self.__create_backup_dir(backup_dir)
         except Exception as e:
-            LOGGER.error('Failed to create backup_restore dir: {}; cause: {}'.format(backup_dir, e))
+            app.LOGGER.error('Failed to create backup dir: {}; cause: {}'.format(backup_dir, e))
 
         try:
-            snapshot = self.__create_snapshot(vm_obj, vm_name)
+            snapshot = self.__create_snapshot(self.vm_obj, vm_name)
             vdi_s = self.__get_vdi(snapshot)
             vdis = []
 
             for vdi, uuid, vbd in vdi_s:
                 item = {}
                 sr = self.__get_sr(vdi)
-                file_name = self.__copy_disk(sr, vdi, uuid, ssh_session, backup_dir)
+                file_name = self.__copy_disk(sr, vdi, uuid, self.ssh_session, backup_dir)
 
                 item['name'] = file_name
                 item['size'] = self.api.VDI.get_virtual_size(vdi)
@@ -176,16 +177,20 @@ class VmBackup:
 
                 self.api.VM.destroy(snapshot)
         except Exception as e:
-            # FIXME: add to log
-            LOGGER.critical(e)
-            raise Exception('VDI backup_restore failed ' + e)
+            error = 'VDI backup failed ' + str(e)
+            app.LOGGER.critical(error)
+
+            self.__umount_folder()
+            disconnect(self.session)
+            ssh_disconnect(self.ssh_session)
+
+            raise Exception(error)
 
         self.__umount_folder()
         disconnect(self.session)
         ssh_disconnect(self.ssh_session)
 
         return vdis
-
 
     def vm_meta_backup(session):
         pass
