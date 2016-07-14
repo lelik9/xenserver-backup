@@ -94,8 +94,8 @@ def __create_snapshot(session, vm, vm_name):
 def __mount_folder(ssh_session):
     if "nfs" in MOUNT_PATH.keys():
         try:
-            stdin, stdout, stderr = ssh_session.exec_command("mount -t nfs " +
-                                                             MOUNT_PATH['nfs'] + ' ' +
+            stdin, stdout, stderr = ssh_session.exec_command("mount -t nfs " + '"' +
+                                                             MOUNT_PATH['nfs'] + '" ' +
                                                              BACKUP_PATH)
             LOGGER.info('Mounted {} to {}'.format(MOUNT_PATH['nfs'], BACKUP_PATH))
         except Exception as e:

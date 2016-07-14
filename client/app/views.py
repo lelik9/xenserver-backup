@@ -21,21 +21,17 @@ def index():
 def storage():
     print(request.args)
     if 'get' in request.args.keys():
-        if request.args['get'] == 'host_sr':
-            try:
-                sr = HostsModel.get_sr()
-                return response(result=sr, resp_type='success')
-            except BaseException as e:
-                return response(result=str(e), resp_type='error')
-    # if request.method == 'GET':
-    #     try:
-    #         BackupStorageModel.add_storage(sr_name=request.args.get('sr_name'),
-    #                                        share=request.args.get('share'),
-    #                                        user=request.args.get('user'),
-    #                                        password=request.args.get('password'),
-    #                                        protocol=request.args.get('protocol'))
-    #     except Exception:
-    #         pass
+        try:
+            sr = []
+            if request.args['get'] == 'host_sr':
+                    sr = HostsModel.get_sr()
+            elif request.args['get'] == 'backup_sr':
+                    sr = BackupStorageModel.get_backup_sr_wo_login()
+
+            return response(result=sr, resp_type='success')
+        except BaseException as e:
+            return response(result=str(e), resp_type='error')
+
     return render_template('storage.html')
 
 
@@ -52,13 +48,15 @@ def hosts():
 
 @app.route('/vms/', methods=['GET'])
 def vms():
+    srs = BackupStorageModel.get_backup_sr_wo_login()
+
     if 'get' in request.args.keys():
         try:
             vm = HostsModel.get_vm()
             return response(result=vm, resp_type='success')
         except BaseException as e:
             return response(result=str(e), resp_type='error')
-    return render_template('vms.html')
+    return render_template('vms.html', srs=srs)
 
 
 @app.route('/vm/<id>', methods=['POST', 'GET'])

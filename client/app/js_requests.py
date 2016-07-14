@@ -1,5 +1,4 @@
 # coding=utf-8
-from __future__ import print_function
 import json
 from flask import request
 from pymongo import errors
@@ -119,5 +118,14 @@ def backup_vm():
 
     :return:
     """
-    print(request.form)
-    return 'success'
+    req = dict(request.form)
+    result = 'Backup success'
+    res_type = 'success'
+
+    try:
+        for vm in req['vm[]']:
+            print(vm)
+    except KeyError:
+        result = 'Please select VM'
+        res_type = 'error'
+    return response(result=result, resp_type=res_type)

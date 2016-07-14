@@ -41,20 +41,16 @@ function fillBackupSrTable(){
         success: function (data) {
             if(data.type.localeCompare('success') == 0) {
                 $('td').remove();
-                var res = data.result;
-
-                for (var a = 0; a < res.length; a++) {
-                    var sr = res[a].sr;
+                var sr = data.result;
 
                     for (var i = 0; i < sr.length; i++) {
-                        $('#hostSrTable').append(
+                        $('#backupSrTable').append(
                             '<tr>' +
-                                '<td>' + sr[i].name + '</td>' +
-                                '<td>' + sr[i].type + '</td>' +
-                                '<td>' + res[a].path + '</td>' +
+                                '<td>' + sr[i]['_id'] + '</td>' +
+                                '<td>' + sr[i]['sr_type'] + '</td>' +
+                                '<td>' + sr[i]['share_path'] + '</td>' +
                             '</tr>');
                     }
-                }
             }
         }
     });

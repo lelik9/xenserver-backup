@@ -113,13 +113,41 @@ class BackupModel:
 
 
 class BackupStorageModel:
+    """
+        Backup storage model:
+            {
+            '_id': name of backup storage,
+            'share_path': share name,
+            'sr_type': share type (smb, nfs, folder),
+            'login': login for smb share,
+            'password': password for smb share,
+        }
+    """
     @staticmethod
     def add_storage(obj):
         mongo.db.backup_sr.insert(obj)
 
 
-class StorageModel:
     @staticmethod
-    def add_storage(**kwargs):
-        res = mongo.db.sr.find_one({'sr_obj': kwargs['sr_obj']})
-        print(res)
+    def get_backup_sr_wo_login():
+        srs = []
+
+        for sr in mongo.db.backup_sr.find({}, {'login': 0, 'password': 0}):
+            srs.append(sr)
+
+        return srs
+
+# class StorageModel:
+#
+#     @staticmethod
+#     def add_storage(obj):
+#         mongo.db.sr.insert(obj)
+#
+#     @staticmethod
+#     def get_backup_sr_paths():
+#         paths = []
+#
+#         for path in mongo.db.sr.find({}, {'share_path': 1}):
+#             paths.append(path)
+#
+#         return paths

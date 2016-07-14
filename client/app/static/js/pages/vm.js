@@ -19,7 +19,7 @@ function fillTable(){
                         $('#vmTable').append(
                             '<tr>' +
                             '<td><div class="checkbox"><label>' +
-                            '<input type="checkbox" name="check" value="' + vm[i].obj + '">' + vm[i].name +
+                            '<input id="vmCheckBox" type="checkbox" name="check" value="' + vm[i].obj + '">' + vm[i].name +
                             '</label></div></td>' +
                             '<td>' + (vm[i].memory / 1000000 >> 0)+ '</td>' +
                             '<td>' + vm[i].CPU + '</td>' +
@@ -35,10 +35,23 @@ function fillTable(){
 fillTable();
 
 $('#backupBtn').on('click', function () {
-    $.ajax({
-        url: '/backup/',
-        type: 'POST',
-        data: $('input[name=check]:checked'),
-        dataType: 'json'
-    })
+    $('#backupModal').modal('show');
 });
+
+$('#yesButton').on('click', function () {
+    var vm = [];
+    $('input[name=check]:checked').each(function() {
+       vm.push($(this).val());
+     });
+    var data = {vm: vm,
+                sr: document.getElementById('srSelect').value};
+    request('/backup/', 'POST', data, onBackupStart, onBackupSuccess);
+});
+
+function onBackupStart() {
+    $.notify('VM backup start', 'info')
+}
+function onBackupSuccess(data) {
+    var res = data['responseJSON'];
+    $.notify(res['result'], res['type']);
+}
