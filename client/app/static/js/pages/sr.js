@@ -9,22 +9,26 @@ function fillHostSrTable(){
         dataType: 'json',
         success: function (data) {
             if(data.type.localeCompare('success') == 0) {
-                $('td').remove();
+                var table = $('#hostSrTable');
                 var res = data.result;
+                var html = '';
+
+                table.find('td').remove();
 
                 for (var a = 0; a < res.length; a++) {
                     var sr = res[a].sr;
 
                     for (var i = 0; i < sr.length; i++) {
-                        $('#hostSrTable').append(
+                        html +=
                             '<tr>' +
                                 '<td>' + sr[i].name + '</td>' +
                                 '<td>' + sr[i].type + '</td>' +
                                 '<td>' + (sr[i].size / 1000000 >> 0) + '/' + (sr[i].utilization / 1000000 >> 0) + '</td>' +
                                 '<td>' + sr[i].share + '</td>' +
                                 '<td>' + res[a].pool + '</td>' +
-                            '</tr>');
+                            '</tr>'
                     }
+                    table.append(html);
                 }
             }
         }
@@ -40,17 +44,20 @@ function fillBackupSrTable(){
         dataType: 'json',
         success: function (data) {
             if(data.type.localeCompare('success') == 0) {
-                $('td').remove();
+                var table = $('#backupSrTable'),
+                    html = '';
+
+                table.find('td').remove();
                 var sr = data.result;
 
                     for (var i = 0; i < sr.length; i++) {
-                        $('#backupSrTable').append(
-                            '<tr>' +
+                        html += '<tr>' +
                                 '<td>' + sr[i]['_id'] + '</td>' +
                                 '<td>' + sr[i]['sr_type'] + '</td>' +
                                 '<td>' + sr[i]['share_path'] + '</td>' +
-                            '</tr>');
+                            '</tr>';
                     }
+                    table.append(html);
             }
         }
     });
