@@ -1,6 +1,5 @@
-# codding: utf-8
-import os
-import logging
+# coding=utf-8
+import json
 from datetime import datetime
 
 from sessions import *
@@ -18,10 +17,13 @@ class VmBackup:
     """
 
     def __init__(self, vm_obj, backup_sr):
+        self.backup_time = str(datetime.now().strftime("%Y-%m-%d_%H-%m"))
         self.vm_obj = vm_obj
         self.session, self.ssh_session = self.__establish_session(vm_obj)
         self.backup_sr = backup_sr
         self.api = self.session.xenapi
+        self.vm_name = self.api.VM.get_name_label(self.vm_obj)
+        self.backup_dir = BACKUP_PATH + '/' + self.vm_name
 
     def __establish_session(self, vm_obj):
         host_obj = HostsModel.get_host_of_vm(vm_obj)
@@ -51,27 +53,33 @@ class VmBackup:
     def __get_vdi(self, vm):
         vbds = self.api.VM.get_VBDs(vm)
 
-        for vbd_s in vbds:
+        for vbd_obj in vbds:
             try:
-                vbd = {}
-                vdi = self.api.VBD.get_VDI(vbd_s)
-                vbd['device'] = self.api.VBD.get_device(vbd_s)
-                vbd['bootable'] = self.api.VBD.get_bootable(vbd_s)
-                vbd['mode'] = self.api.VBD.get_mode(vbd_s)
-                vbd['type'] = self.api.VBD.get_type(vbd_s)
-                vbd['unplag'] = self.api.VBD.get_unpluggable(vbd_s)
-            except Exception as e:
-                LOGGER.error('Get vdi of vbd {} failed; cause: {}'.format(vbd_s, e))
+                vdi_obj = self.api.VBD.get_VDI(vbd_obj)
+                vbd_spec = {
+                    'device': self.api.VBD.get_device(vbd_obj),
+                    'userdevice': self.api.VBD.get_userdevice(vbd_obj),
+                    'bootable': self.api.VBD.get_bootable(vbd_obj),
+                    'mode': self.api.VBD.get_mode(vbd_obj),
+                    'type': self.api.VBD.get_type(vbd_obj),
+                    'empty': self.api.VBD.get_empty(vbd_obj),
+                    'unpluggable': self.api.VBD.get_unpluggable(vbd_obj),
+                    'other_config': self.api.VBD.get_other_config(vbd_obj),
+                    'qos_algorithm_type': self.api.VBD.get_qos_algorithm_type(vbd_obj),
+                    'qos_algorithm_params': self.api.VBD.get_qos_algorithm_params(vbd_obj)
+                }
 
-            if 'NULL' in vdi:
-                # FIXME: add to log
-                print('VM', self.api.VM.get_name_label(vm),
-                      'had bad VDB, UUID: ', self.api.VBD.get_uuid(vbd_s))
-            else:
-                sm_config = self.api.VDI.get_sm_config(vdi)
-                vdi_uuid = sm_config['vhd-parent']
-                # print(vdi, vdi_uuid, vbd)
-                yield vdi, vdi_uuid, vbd
+                if 'NULL' in vdi_obj:
+                    # FIXME: add to log
+                    print('VM', self.api.VM.get_name_label(vm),
+                          'had bad VBD, UUID: ', self.api.VBD.get_uuid(vbd_obj))
+                else:
+                    sm_config = self.api.VDI.get_sm_config(vdi_obj)
+                    vdi_uuid = sm_config['vhd-parent']
+                    yield vdi_obj, vdi_uuid, vbd_spec
+
+            except Exception as e:
+                app.LOGGER.error('Get vdi of vbd {} failed; cause: {}'.format(vbd_obj, e))
 
     def __get_sr(self, vdi):
         sr = self.api.VDI.get_SR(vdi)
@@ -80,14 +88,14 @@ class VmBackup:
 
         return {'uuid': sr_uuid, 'type': sr_type}
 
-    def __create_snapshot(self, vm, vm_name):
+    def __create_snapshot(self):
         try:
-            snap = self.api.VM.snapshot(vm, vm_name)
-            app.LOGGER.info('Created snapshot {}'.format(snap))
+            snap = self.api.VM.snapshot(self.vm_obj, self.vm_name)
+            app.LOGGER.info('Created snapshot {}'.format(self.vm_name))
 
             return snap
         except Exception as e:
-            raise Exception('Creating VM {} snapshot error; cause: {}'.format(vm_name, str(e)))
+            raise Exception('Creating VM {} snapshot error; cause: {}'.format(self.vm_name, str(e)))
 
     def __mount_folder(self, backup_sr):
         mount_path = backup_sr['share_path']
@@ -110,12 +118,12 @@ class VmBackup:
         except Exception as e:
             app.LOGGER.error('Failed to unmount folder: {}; cause: {}'.format(BACKUP_PATH, e))
 
-    def __copy_disk(self, sr, vdi, vdi_uuid, ssh_session, backup_dir):
+    def __copy_disk(self, sr, vdi, vdi_uuid):
         try:
             file_name = ('"' + self.api.VDI.get_name_label(vdi) + '_' +
-                         str(datetime.now().strftime("%Y-%m-%d_%H-%m")) + '.dd"')
+                         self.backup_time + '.dd"')
 
-            command = 'dd if={disk} of=' + backup_dir + '/' + file_name + ' bs=102400'
+            command = 'dd if={disk} of=' + self.backup_dir + '/' + file_name + ' bs=102400'
 
             if sr['type'] == 'lvmoiscsi':
                 path = ISCSI_SR_PATH + sr['uuid']
@@ -123,74 +131,89 @@ class VmBackup:
                 com = command.format(disk=disk)
                 print('disk', disk)
                 # Activate VHD for cloning
-                ssh_session.exec_command('lvchange -ay ' + disk)
+                self.ssh_session.exec_command('lvchange -ay ' + disk)
                 print('command ', com)
-                stdin, stdout, stderr = ssh_session.exec_command(com)
+                stdin, stdout, stderr = self.ssh_session.exec_command(com)
                 print('out ', stdout.read(), ' err ', stderr.read())
 
-            elif sr['type'] == 'nfs':
+            elif sr['type'] in ('nfs', 'ext'):
                 path = NFS_SR_PATH + sr['uuid']
                 disk = path + '/' + vdi_uuid + '.vhd'
                 com = command.format(disk=disk)
 
-                stdin, stdout, stderr = ssh_session.exec_command(com)
+                stdin, stdout, stderr = self.ssh_session.exec_command(com)
                 print(stdout.read(), stderr.read())
+            return file_name
 
         except Exception as e:
             print('Copy disk error: ' + e)
 
-        return file_name
-
-    def __create_backup_dir(self, dir_name):
-        stdin, stdout, stderr = self.ssh_session.exec_command('mkdir -p ' + dir_name)
+    def __create_backup_dir(self):
+        stdin, stdout, stderr = self.ssh_session.exec_command('mkdir -p ' + self.backup_dir)
         error = stderr.read()
 
-        if error is not None:
-            raise Exception(error)
+        if error != '':
+            err = app.LOGGER.error('Failed to create backup dir: {}; cause: {}'.format(self.backup_dir,
+                                                                                       error))
+            raise Exception(err)
 
     def make_backup(self, backup_sr):
         self.__mount_folder(backup_sr)
-        vm_name = self.api.VM.get_name_label(self.vm_obj)
 
-        backup_dir = BACKUP_PATH + '/' + vm_name
-        try:
-            self.__create_backup_dir(backup_dir)
-        except Exception as e:
-            app.LOGGER.error('Failed to create backup dir: {}; cause: {}'.format(backup_dir, e))
+        self.__create_backup_dir()
+
+        snapshot = self.__create_snapshot()
 
         try:
-            snapshot = self.__create_snapshot(self.vm_obj, vm_name)
-            vdi_s = self.__get_vdi(snapshot)
-            vdis = []
+            vdi_objects = self.__get_vdi(snapshot)
+            vdi_list = []
 
-            for vdi, uuid, vbd in vdi_s:
-                item = {}
-                sr = self.__get_sr(vdi)
-                file_name = self.__copy_disk(sr, vdi, uuid, self.ssh_session, backup_dir)
+            for vdi_obj, uuid, vbd in vdi_objects:
+                sr = self.__get_sr(vdi_obj)
+                file_name = self.__copy_disk(sr, vdi_obj, uuid)
 
-                item['name'] = file_name
-                item['size'] = self.api.VDI.get_virtual_size(vdi)
-                item['vbd'] = vbd
+                vdi_spec = self.create_vdi_spec(vdi_obj=vdi_obj, vbd_spec=vbd, backup_file=file_name)
 
-                vdis.append(item)
-                self.api.VDI.destroy(vdi)
+                vdi_list.append(vdi_spec)
+                self.api.VDI.destroy(vdi_obj)
 
-                self.api.VM.destroy(snapshot)
+            self.make_meta_file(vdi_list)
+            self.api.VM.destroy(snapshot)
+
+            self.__umount_folder()
+            disconnect(self.session)
+            ssh_disconnect(self.ssh_session)
+
         except Exception as e:
             error = 'VDI backup failed ' + str(e)
             app.LOGGER.critical(error)
 
+            self.api.VM.destroy(snapshot)
             self.__umount_folder()
             disconnect(self.session)
             ssh_disconnect(self.ssh_session)
 
             raise Exception(error)
 
-        self.__umount_folder()
-        disconnect(self.session)
-        ssh_disconnect(self.ssh_session)
+    def make_meta_file(self, meta):
+        pass
+        # json.dump(meta, open(self.backup_dir + '/' + self.vm_name + self.backup_time + '.meta',
+        #                      'w'))
 
-        return vdis
+    def create_vdi_spec(self, vdi_obj, vbd_spec, backup_file):
+        return {
+            'name_label': self.api.VDI.get_name_label(vdi_obj),
+            'virtual_size': self.api.VDI.get_virtual_size(vdi_obj),
+            'type': self.api.VDI.get_type(vdi_obj),
+            'sharable': self.api.VDI.get_sharable(vdi_obj),
+            'read_only': self.api.VDI.get_read_only(vdi_obj),
+            'other_config': self.api.VDI.get_other_config(vdi_obj),
+            'tags': self.api.VDI.get_tags(vdi_obj),
+            'managed': self.api.VDI.get_managed(vdi_obj),
+            'missing': self.api.VDI.get_missing(vdi_obj),
+            'vbd_spec': vbd_spec,
+            'backup_file': backup_file
+        }
 
     def vm_meta_backup(session):
         pass
