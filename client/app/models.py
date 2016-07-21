@@ -126,8 +126,8 @@ class VmModel:
 
 class BackupModel:
     @staticmethod
-    def add_backup_info(**kwargs):
-        mongo.db.backup.insert(kwargs)
+    def add_backup_info(obj):
+        mongo.db.backup.insert(obj)
 
     @staticmethod
     def get_vms_backups(id):

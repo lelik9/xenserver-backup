@@ -1,10 +1,11 @@
 # coding=utf-8
 import json
 from datetime import datetime
+import time
 
 from sessions import *
 from app import app
-from app.models import HostsModel
+from app.models import HostsModel, BackupModel
 
 NFS_SR_PATH = '/var/run/sr-mount/'
 ISCSI_SR_PATH = '/dev/VG_XenStorage-'
@@ -17,7 +18,7 @@ class VmBackup:
     """
 
     def __init__(self, vm_obj, backup_sr):
-        self.backup_time = str(datetime.now().strftime("%Y-%m-%d_%H-%m"))
+        self.backup_time = datetime.now().strftime("%Y-%m-%d_%H-%M")
         self.vm_obj = vm_obj
         self.session, self.ssh_session = self.__establish_session(vm_obj)
         self.backup_sr = backup_sr
@@ -35,20 +36,6 @@ class VmBackup:
         ssh_session = ssh_connect(user=user, password=password, host=host)
 
         return session, ssh_session
-
-    def __get_vm(self):
-        vm_list = {}
-        all_vms = self.api.VM.get_all()
-        vms = filter(lambda x: (not self.api.VM.get_is_a_template(x)) and
-                               ('Control domain on host:' not in
-                                self.api.VM.get_name_label(x)),
-                     all_vms)
-
-        for vm in vms:
-            vm_name = self.api.VM.get_name_label(vm)
-            vm_list[vm_name] = vm
-
-        return vm_list
 
     def __get_vdi(self, vm):
         vbds = self.api.VM.get_VBDs(vm)
@@ -139,6 +126,7 @@ class VmBackup:
             elif sr['type'] in ('nfs', 'ext'):
                 path = NFS_SR_PATH + sr['uuid']
                 disk = path + '/' + vdi_uuid + '.vhd'
+                print('disk', disk)
                 com = command.format(disk=disk)
 
                 stdin, stdout, stderr = self.ssh_session.exec_command(com)
@@ -166,57 +154,103 @@ class VmBackup:
 
         try:
             vdi_objects = self.__get_vdi(snapshot)
-            vdi_list = []
+            vdis_meta = []
 
             for vdi_obj, uuid, vbd in vdi_objects:
                 sr = self.__get_sr(vdi_obj)
                 file_name = self.__copy_disk(sr, vdi_obj, uuid)
 
-                vdi_spec = self.create_vdi_spec(vdi_obj=vdi_obj, vbd_spec=vbd, backup_file=file_name)
+                vdi_spec = self.__get_vdi_meta(vdi_obj=vdi_obj, vbd_spec=vbd, backup_file=file_name)
 
-                vdi_list.append(vdi_spec)
+                vdis_meta.append(vdi_spec)
                 self.api.VDI.destroy(vdi_obj)
 
-            self.make_meta_file(vdi_list)
-            self.api.VM.destroy(snapshot)
+            vm_meta, vifs_obj = self.__get_vm_meta()
+            vifs_meta = self.__get_vifs_meta(vifs_obj)
 
-            self.__umount_folder()
-            disconnect(self.session)
-            ssh_disconnect(self.ssh_session)
+            self.__make_meta_file(vdis_meta, vm_meta, vifs_meta)
 
         except Exception as e:
             error = 'VDI backup failed ' + str(e)
             app.LOGGER.critical(error)
-
+            raise Exception(error)
+        finally:
             self.api.VM.destroy(snapshot)
             self.__umount_folder()
             disconnect(self.session)
             ssh_disconnect(self.ssh_session)
 
-            raise Exception(error)
+    def __make_meta_file(self, vdis_meta, vm_meta, vifs_meta):
+        meta = json.dumps({
+            'vm_name': self.vm_name,
+            'vdis': vdis_meta,
+            'vm': vm_meta,
+            'vifs': vifs_meta
+        })
+        meta_file = self.vm_name+'_'+self.backup_time+'.meta'
 
-    def make_meta_file(self, meta):
-        pass
-        # json.dump(meta, open(self.backup_dir + '/' + self.vm_name + self.backup_time + '.meta',
-        #                      'w'))
+        self.ssh_session.exec_command('echo '+meta+' >>'+self.backup_dir+'/'+meta_file)
+        BackupModel.add_backup_info({
+            '_id': self.backup_time,
+            'vm_name': self.vm_name,
+            'vdis': vdis_meta,
+            'vm': vm_meta,
+            'vifs': vifs_meta
+        })
 
-    def create_vdi_spec(self, vdi_obj, vbd_spec, backup_file):
-        return {
-            'name_label': self.api.VDI.get_name_label(vdi_obj),
-            'virtual_size': self.api.VDI.get_virtual_size(vdi_obj),
-            'type': self.api.VDI.get_type(vdi_obj),
-            'sharable': self.api.VDI.get_sharable(vdi_obj),
-            'read_only': self.api.VDI.get_read_only(vdi_obj),
-            'other_config': self.api.VDI.get_other_config(vdi_obj),
-            'tags': self.api.VDI.get_tags(vdi_obj),
-            'managed': self.api.VDI.get_managed(vdi_obj),
-            'missing': self.api.VDI.get_missing(vdi_obj),
+    def __get_vdi_meta(self, vdi_obj, vbd_spec, backup_file):
+        vdi_record = self.api.VDI.get_record(vdi_obj)
+
+        vdi_meta = {
+            'name_label': vdi_record['name_label'],
+            'virtual_size': vdi_record['virtual_size'],
+            'type': vdi_record['type'],
+            'sharable': vdi_record['sharable'],
+            'read_only': vdi_record['read_only'],
+            'other_config': vdi_record['other_config'],
+            'tags': vdi_record['tags'],
+            'managed': vdi_record['managed'],
+            'missing': vdi_record['missing'],
             'vbd_spec': vbd_spec,
             'backup_file': backup_file
         }
+        return vdi_meta
 
-    def vm_meta_backup(session):
-        pass
+    def __get_vm_meta(self):
+        vm_record = self.api.VM.get_record(self.vm_obj)
+        vifs_obj = vm_record['VIFs']
+        vm_meta = {
+            'memory_dynamic_min': vm_record['memory_dynamic_min'],
+            'memory_dynamic_max': vm_record['memory_dynamic_max'],
+            'memory_static_max': vm_record['memory_static_max'],
+            'memory_static_min': vm_record['memory_static_min'],
+            'actions_after_shutdown': vm_record['actions_after_shutdown'],
+            'actions_after_crash': vm_record['actions_after_crash'],
+            'actions_after_reboot': vm_record['actions_after_reboot'],
+            'HVM_boot_policy': vm_record['HVM_boot_policy'],
+            'HVM_boot_params': vm_record['HVM_boot_params'],
+            'HVM_shadow_multiplier': vm_record['HVM_shadow_multiplier'],
+            'VCPUs_at_startup': vm_record['VCPUs_at_startup'],
+            'VCPUs_max': vm_record['VCPUs_max'],
+            'other_config': vm_record['other_config']
+        }
+        return vm_meta, vifs_obj
+
+    def __get_vifs_meta(self, vifs_obj):
+        vifs = []
+
+        for vif_obj in vifs_obj:
+            vif_record = self.api.VIF.get_record(vif_obj)
+            vif = {
+                'device': vif_record['device'],
+                'MTU': vif_record['MTU'],
+                'MAC': vif_record['MAC'],
+                'other_config': vif_record['other_config'],
+                'name': self.api.network.get_record(vif_record['network'])['name_label']
+            }
+            vifs.append(vif)
+
+        return vifs
 
 # if __name__ == "__main__":
 #
