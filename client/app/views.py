@@ -1,7 +1,7 @@
 from flask import render_template, redirect, url_for
 
 from app import app
-from models import HostsModel, BackupStorageModel
+from models import HostsModel, BackupStorageModel, BackupModel
 from controller import HostController, VmBackupController
 
 from js_requests import *
@@ -57,6 +57,17 @@ def vms():
         except BaseException as e:
             return response(result=str(e), resp_type='error')
     return render_template('vms.html', srs=srs)
+
+
+@app.route('/backups/', methods=['GET'])
+def backups():
+    if 'get' in request.args.keys():
+        try:
+            backups = BackupModel.get_backups()
+            return response(result=backups, resp_type='success')
+        except BaseException as e:
+            return response(result=str(e), resp_type='error')
+    return render_template('backups.html')
 
 
 @app.route('/vm/<id>', methods=['POST', 'GET'])

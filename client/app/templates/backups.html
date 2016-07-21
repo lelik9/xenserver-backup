@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block page_title %}Backups{% endblock %}
+{% block content %}
+    <div class="btn-box-tool" align="right">
+        <button type="button" class="btn bg-green btn-flat" id="restoreBtn">
+            Restore
+        </button>
+        <button type="button" class="btn bg-green btn-flat" id="removeBtn">
+            Remove
+        </button>
+    </div>
+
+    <div class="box">
+        <div class="box-body table-responsive no-padding">
+            <table class="table table-hover" id="backupTable" align="center">
+                <tr>
+                    <th>VM</th>
+                    <th>Backup time</th>
+                </tr>
+            </table>
+        </div>
+    </div>
+{% endblock %}
+{% block script %}
+    <script src="../static/js/pages/backup.js"></script>
+{% endblock %}

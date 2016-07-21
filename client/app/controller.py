@@ -149,7 +149,7 @@ class VmBackupController:
     def backup_vm(vm_obj, backup_sr):
         sr = BackupStorageModel.get_backup_sr(backup_sr)
 
-        vm_backup = VmBackup(vm_obj=vm_obj, backup_sr=backup_sr)
+        vm_backup = VmBackup(vm_obj=vm_obj, backup_sr=sr)
 
         try:
             vm_backup.make_backup(backup_sr=sr)
@@ -184,7 +184,7 @@ class VmBackupController:
         session, ssh_session = _establish_session(host_id)
 
         try:
-            res = list(BackupModel.get_backup_info(backup_id))[0]
+            res = list(BackupModel.get_backups(backup_id))[0]
 
             BackupModel.remove_backup(backup_id)
             backup_restore.mount_folder(ssh_session)
@@ -209,7 +209,7 @@ class VmBackupController:
         session, ssh_session = _establish_session(host_id)
 
         try:
-            res = list(BackupModel.get_backup_info(backup_id))[0]
+            res = list(BackupModel.get_backups(backup_id))[0]
             restore = Restore(session, ssh_session)
             print('restore')
             restore.restore_vdi(vm['vm_object'], res['vdis'], vm['vm_name'])

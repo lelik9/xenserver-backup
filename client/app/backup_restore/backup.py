@@ -84,10 +84,10 @@ class VmBackup:
         except Exception as e:
             raise Exception('Creating VM {} snapshot error; cause: {}'.format(self.vm_name, str(e)))
 
-    def __mount_folder(self, backup_sr):
-        mount_path = backup_sr['share_path']
+    def __mount_folder(self):
+        mount_path = self.backup_sr['share_path']
 
-        if backup_sr['sr_type'] == "nfs":
+        if self.backup_sr['sr_type'] == "nfs":
             try:
                 self.ssh_session.exec_command("mount -t nfs " + '"' + mount_path + '" ' +
                                               BACKUP_PATH)
@@ -110,7 +110,7 @@ class VmBackup:
             file_name = ('"' + self.api.VDI.get_name_label(vdi) + '_' +
                          self.backup_time + '.dd"')
 
-            command = 'dd if={disk} of=' + self.backup_dir + '/' + file_name + ' bs=102400'
+            command = 'dd if={disk} of=' + self.backup_dir + '/' + file_name + ' bs=1M'
 
             if sr['type'] == 'lvmoiscsi':
                 path = ISCSI_SR_PATH + sr['uuid']
@@ -146,7 +146,7 @@ class VmBackup:
             raise Exception(err)
 
     def make_backup(self, backup_sr):
-        self.__mount_folder(backup_sr)
+        self.__mount_folder()
 
         self.__create_backup_dir()
 
@@ -195,7 +195,9 @@ class VmBackup:
             'vm_name': self.vm_name,
             'vdis': vdis_meta,
             'vm': vm_meta,
-            'vifs': vifs_meta
+            'vifs': vifs_meta,
+            'meta_file': meta_file,
+            'backup_sr': self.backup_sr['_id']
         })
 
     def __get_vdi_meta(self, vdi_obj, vbd_spec, backup_file):

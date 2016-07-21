@@ -125,30 +125,78 @@ class VmModel:
 
 
 class BackupModel:
+    """
+        Backup meta model:
+            {
+                '_id': backup time: str,
+                'vm_name': VM name: str,
+                'vdis': [{
+                    'name_label': ,
+                    'virtual_size': ,
+                    'type': ,
+                    'sharable': ,
+                    'read_only': ,
+                    'other_config': ,
+                    'tags': ,
+                    'managed': ,
+                    'missing': ,
+                    'vbd_spec': [{
+                        'device': ,
+                        'userdevice': ,
+                        'bootable': ,
+                        'mode': ,
+                        'type': ,
+                        'empty': ,
+                        'unpluggable': ,
+                        'other_config': ,
+                        'qos_algorithm_type': ,
+                        'qos_algorithm_params':
+                    }],
+                    'backup_file': vdi backup file name
+                }],
+                'vm': {
+                    'memory_dynamic_min': ,
+                    'memory_dynamic_max': ,
+                    'memory_static_max': ,
+                    'memory_static_min': ,
+                    'actions_after_shutdown': ,
+                    'actions_after_crash': ,
+                    'actions_after_reboot': ,
+                    'HVM_boot_policy': ,
+                    'HVM_boot_params': ,
+                    'HVM_shadow_multiplier': ,
+                    'VCPUs_at_startup': ,
+                    'VCPUs_max': ,
+                    'other_config':
+                },
+                'vifs': {
+                    'device': ,
+                    'MTU': ,
+                    'MAC': ,
+                    'other_config': ,
+                    'name':
+                },
+                'meta_file': backup meta file name: str,
+                'backup_sr': storage when store backup: str
+            }
+    """
     @staticmethod
     def add_backup_info(obj):
         mongo.db.backup.insert(obj)
 
     @staticmethod
-    def get_vms_backups(id):
-        if id == 'all':
-            backups = mongo.db.backup.find()
-        else:
-            backups = mongo.db.backup.find({'vm_id': id})
-
-        all_backup = list(backups)
-        print(all_backup)
-        return all_backup
+    def get_backup(id):
+        return mongo.db.backup.find_one({'_id': id})
 
     @staticmethod
     def remove_backup(id):
         mongo.db.backup.remove({'_id': ObjectId(id)})
 
     @staticmethod
-    def get_backup_info(id):
-        backup = mongo.db.backup.find({'_id': ObjectId(id)}, {'vdis': 1})
+    def get_backups():
+        backups = list(mongo.db.backup.find({}, {'vm_name': 1}))
 
-        return backup
+        return backups
 
 
 class BackupStorageModel:

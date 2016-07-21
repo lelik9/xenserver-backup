@@ -5,7 +5,7 @@ from pymongo import errors
 
 from app import app
 from controller import HostController, VmBackupController
-from models import HostsModel, BackupStorageModel
+from models import HostsModel, BackupStorageModel, BackupModel
 
 
 def response(result=None, resp_type='success'):
@@ -112,7 +112,7 @@ def add_backup_sr():
         return response(result='Add backup_restore sr failed. {}'.format(str(e)), resp_type='error')
 
 
-@app.route('/backup_restore/', methods=['POST'])
+@app.route('/backup/', methods=['POST'])
 def backup_vm():
     """
 
@@ -131,4 +131,26 @@ def backup_vm():
     except BaseException as e:
         result = str(e)
         res_type = 'error'
+    return response(result=result, resp_type=res_type)
+
+
+@app.route('/backup/', methods=['DELETE'])
+def rm_backup():
+    req = dict(request.form)
+    result = 'Remove backup success'
+    res_type = 'success'
+
+    try:
+        for backup in req['backup[]']:
+            try:
+                backup_meta = BackupModel.get_backup(backup)
+                meta_file = backup_meta['meta_file']
+                vdis = backup_meta['vdis']
+            except BaseException as e:
+                res_type = 'error'
+                result = 'Remaove backup {} failed'.format(backup)
+    except KeyError:
+        res_type = 'error'
+        result = 'Please select backup'
+
     return response(result=result, resp_type=res_type)

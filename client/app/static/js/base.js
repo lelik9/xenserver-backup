@@ -11,3 +11,8 @@ function request(url, type, data, on_start, on_complete){
         complete: on_complete
     });
 }
+
+function onSuccess(data) {
+    var res = data['responseJSON'];
+    $.notify(res['result'], res['type']);
+}
