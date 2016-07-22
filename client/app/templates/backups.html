@@ -2,7 +2,7 @@
 {% block page_title %}Backups{% endblock %}
 {% block content %}
     <div class="btn-box-tool" align="right">
-        <button type="button" class="btn bg-green btn-flat" id="restoreBtn">
+        <button type="button" class="btn bg-green btn-flat" data-toggle="modal" data-target="#backupModal">
             Restore
         </button>
         <button type="button" class="btn bg-green btn-flat" id="removeBtn">
@@ -20,6 +20,84 @@
             </table>
         </div>
     </div>
+
+        <!-- Add Host modal window  -->
+    <div class="modal fade" tabindex="-1" role="dialog" id="backupModal">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title">Add host</h4>
+          </div>
+          <div class="modal-body">
+            <!-- form start -->
+            <form class="form-horizontal">
+                <!-- VM field -->
+                <div class="form-group">
+                  <label for="inputLogin" class="col-sm-2 control-label">VM name</label>
+
+                  <div class="col-sm-10">
+                    <input required type="text" class="form-control" name="vm_name" id="vmName">
+                  </div>
+                </div>
+                <!-- Host field -->
+                <div class="form-group">
+                  <label for="inputLogin" class="col-sm-2 control-label">Restore on host</label>
+
+                  <div class="col-sm-10">
+                    <select class="form-control" name="host" id="hostSelect" onchange="getHostSR()">
+                    {% for pool in hosts %}
+                        {% for host in pool['hosts'] %}
+                            <option value="{{ pool['pool'] }}">{{ host['name']}}</option>
+                        {% endfor %}
+                    {% endfor %}
+                    </select>
+                  </div>
+                </div>
+                <!-- SR field -->
+                <div class="form-group">
+                  <label for="inputLogin" class="col-sm-2 control-label">Restore on sr</label>
+
+                  <div class="col-sm-10">
+                    <select class="form-control" name="sr" id="srSelect">
+                    </select>
+                  </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="restore">Restore</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </form>
+          </div>
+          <div class="modal-footer">
+              <div class="progress" style="display:none" id="progress">
+                  <div class="progress-bar progress-bar-primary progress-bar-striped active"
+                       role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"
+                       style="width: 100%">
+                    </div>
+              </div>
+          </div>
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+
+    <div class="modal modal-danger" tabindex="-1" role="dialog" id="rmModal">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title">Remove</h4>
+          </div>
+          <div class="modal-body">
+            <p>A you sure want to removing pool with all hosts and VM's in it?</p>
+          </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline pull-left"
+                        data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-outline pull-right" id="yesButton">Yes</button>
+            </div>
+        </div>
+      </div>
+    </div>
+
 {% endblock %}
 {% block script %}
     <script src="../static/js/pages/backup.js"></script>

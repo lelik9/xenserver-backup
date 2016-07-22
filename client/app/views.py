@@ -61,42 +61,14 @@ def vms():
 
 @app.route('/backups/', methods=['GET'])
 def backups():
+    hosts = HostsModel.get_hosts()
+
     if 'get' in request.args.keys():
         try:
             backups = BackupModel.get_backups()
             return response(result=backups, resp_type='success')
         except BaseException as e:
             return response(result=str(e), resp_type='error')
-    return render_template('backups.html')
 
+    return render_template('backups.html', hosts=hosts)
 
-@app.route('/vm/<id>', methods=['POST', 'GET'])
-def vm(id):
-    vm_form = VmForm(id)
-    vm_form.alert = False
-    vm_controller = VmBackupController()
-
-    if vm_form.backup_btn.data:
-        vm_form.backup_info = vm_controller.backup_vm(id)
-
-    if request.method == 'GET':
-        try:
-            submit = request.args.get('submit')
-
-            if submit is not None:
-                backup_id = request.args.get('backup')
-
-                if backup_id is not None:
-                    if submit == 'remove':
-                        vm_controller.remove_backup(backup_id, id)
-                    elif submit == 'restore':
-                        vm_controller.restore_vdi(backup_id, id)
-                else:
-                    vm_form.alert = True
-
-                return redirect(url_for('vm', id=id))
-        except Exception as e:
-            print('exception: ', e)
-        # vm_form.alert = True
-
-    return render_template('vm.html', form=vm_form)

@@ -32,3 +32,15 @@ $('#removeBtn').on('click', function () {
      });
    request('/backup/', 'DELETE', {backup: backups}, null, onSuccess)
 });
+
+function getHostSR() {
+    var host = document.getElementById('hostSelect').value;
+    var sr_select = document.getElementById('srSelect');
+
+    request('/storage/', 'GET', {get:'host_sr'}, null, fill_select);
+
+    function fill_select(data) {
+        console.log(data)
+    }
+}
+getHostSR();
