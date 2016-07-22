@@ -83,8 +83,14 @@ class HostsModel:
         return sr
 
     @staticmethod
-    def get_host_of_vm(vm_obj):
+    def get_pool_of_vm(vm_obj):
         host = mongo.db.hosts.find_one({'vm.obj': vm_obj})
+
+        return host
+
+    @staticmethod
+    def get_pool_of_host(host_obj):
+        host = mongo.db.hosts.find_one({'hosts.obj': host_obj})
 
         return host
 

@@ -25,12 +25,24 @@ function fillBackupTable() {
 }
 fillBackupTable();
 
+$('#restore').on('click', function () {
+    console.log($('#hostSelect').value);
+    var data = {
+        vm_name: document.getElementById('vmName').value,
+        host_obj: "OpaqueRef:012c9d17-05b2-0a07-26a9-b0cf2f82b2e8",
+        sr: document.getElementById('srSelect').value,
+        backup_id: "2016-07-22_17-56"
+    };
+    console.log('!!!!!!!!!!');
+    request('/backup/', 'UPDATE', data, null, onSuccess)
+});
+
 $('#removeBtn').on('click', function () {
     var backups = [];
     $('input[name=check]:checked').each(function() {
        backups.push($(this).val());
      });
-   request('/backup/', 'DELETE', {backup: backups}, null, onSuccess)
+   request('/backup/', 'DELETE', {backup: backups}, null, null)
 });
 
 function getHostSR() {

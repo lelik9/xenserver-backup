@@ -4,12 +4,12 @@ from datetime import datetime
 import time
 
 from sessions import *
+from common import *
 from app import app
 from app.models import HostsModel, BackupModel
 
 NFS_SR_PATH = '/var/run/sr-mount/'
 ISCSI_SR_PATH = '/dev/VG_XenStorage-'
-BACKUP_PATH = '/media'
 
 
 class VmBackup:
@@ -20,22 +20,11 @@ class VmBackup:
     def __init__(self, vm_obj, backup_sr):
         self.backup_time = datetime.now().strftime("%Y-%m-%d_%H-%M")
         self.vm_obj = vm_obj
-        self.session, self.ssh_session = self.__establish_session(vm_obj)
+        self.session, self.ssh_session = establish_session(vm_obj, 'get_pool_of_vm')
         self.backup_sr = backup_sr
         self.api = self.session.xenapi
         self.vm_name = self.api.VM.get_name_label(self.vm_obj)
         self.backup_dir = BACKUP_PATH + '/' + self.vm_name
-
-    def __establish_session(self, vm_obj):
-        host_obj = HostsModel.get_host_of_vm(vm_obj)
-        host = host_obj['master']
-        user = host_obj['login']
-        password = host_obj['password']
-
-        session = connect(user=user, password=password, host=host)
-        ssh_session = ssh_connect(user=user, password=password, host=host)
-
-        return session, ssh_session
 
     def __get_vdi(self, vm):
         vbds = self.api.VM.get_VBDs(vm)
@@ -84,27 +73,6 @@ class VmBackup:
         except Exception as e:
             raise Exception('Creating VM {} snapshot error; cause: {}'.format(self.vm_name, str(e)))
 
-    def __mount_folder(self):
-        mount_path = self.backup_sr['share_path']
-
-        if self.backup_sr['sr_type'] == "nfs":
-            try:
-                self.ssh_session.exec_command("mount -t nfs " + '"' + mount_path + '" ' +
-                                              BACKUP_PATH)
-
-                app.LOGGER.info('Mounted {} to {}'.format(mount_path, BACKUP_PATH))
-            except Exception as e:
-                error = 'Failed mount folder: {}; cause: {}'.format(mount_path, str(e))
-                app.LOGGER.error(error)
-                raise BaseException(error)
-
-    def __umount_folder(self):
-        try:
-            self.ssh_session.exec_command("umount " + BACKUP_PATH)
-            app.LOGGER.info('{} unmounted'.format(BACKUP_PATH))
-        except Exception as e:
-            app.LOGGER.error('Failed to unmount folder: {}; cause: {}'.format(BACKUP_PATH, e))
-
     def __copy_disk(self, sr, vdi, vdi_uuid):
         try:
             file_name = ('"' + self.api.VDI.get_name_label(vdi) + '_' +
@@ -146,7 +114,7 @@ class VmBackup:
             raise Exception(err)
 
     def make_backup(self, backup_sr):
-        self.__mount_folder()
+        mount_folder(self.ssh_session, backup_sr)
 
         self.__create_backup_dir()
 
@@ -176,7 +144,7 @@ class VmBackup:
             raise Exception(error)
         finally:
             self.api.VM.destroy(snapshot)
-            self.__umount_folder()
+            umount_folder(self.ssh_session)
             disconnect(self.session)
             ssh_disconnect(self.ssh_session)
 

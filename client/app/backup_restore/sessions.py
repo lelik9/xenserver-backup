@@ -3,8 +3,27 @@ import paramiko
 from XenAPI import Session
 
 from app import app
+from app.models import HostsModel
 
 PORT = 22
+
+
+def establish_session(obj, db_req):
+    db_requests = {
+        'get_pool_of_vm': HostsModel.get_pool_of_vm,
+        'get_pool_of_host': HostsModel.get_pool_of_host
+    }
+
+    host_obj = db_requests[db_req](obj)
+
+    host = host_obj['master']
+    user = host_obj['login']
+    password = host_obj['password']
+
+    session = connect(user=user, password=password, host=host)
+    ssh_session = ssh_connect(user=user, password=password, host=host)
+
+    return session, ssh_session
 
 
 def ssh_connect(user='', password='', host=''):

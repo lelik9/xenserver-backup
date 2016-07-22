@@ -1,36 +1,46 @@
+# coding=utf-8
+from sessions import *
+from common import *
+
+from app import app
+from app.models import HostsModel, BackupModel
+
+
 class Restore:
     NFS_SR_PATH = '/var/run/sr-mount/'
     ISCSI_SR_PATH = '/dev/VG_XenStorage-'
-    BACKUP_PATH = '/media'
-    MOUNT_PATH = {'nfs': '10.10.10.61:/xenclusterbackup'}
 
-    def __init__(self, session, ssh_session):
-        self.session = session
-        self.ssh_session = ssh_session
+    def __init__(self, host_obj, vm_name, sr, vm_meta, vdis_meta, vifs_meta, backup_sr):
+        self.session, self.ssh_session = establish_session(host_obj, 'get_pool_of_host')
+        self.vm_name = vm_name
+        self.sr = sr
+        self.vm_meta = vm_meta
+        self.vdis_meta = vdis_meta
+        self.vifs_meta = vifs_meta
+        self.backup_sr = backup_sr
+        self.api = self.session.xenapi
 
-    def mount_folder(self):
-        if "nfs" in self.MOUNT_PATH.keys():
-            try:
-                stdin, stdout, stderr = \
-                    self.ssh_session.exec_command("mount -t nfs " +
-                                                  self.MOUNT_PATH['nfs'] + ' ' +
-                                                  self.BACKUP_PATH)
+    def restore_vm(self):
+        mount_folder(self.ssh_session, self.backup_sr)
 
-                print(stdout.read(), stderr.read())
-            except Exception as e:
-                print(e, stdout.read(), stderr.read())
+        vm_obj = self.__create_vm()
 
-    def umount_folder(self):
+    def __create_vm(self):
         try:
-            stdin, stdout, stderr = \
-                self.ssh_session.exec_command("umount " + self.BACKUP_PATH)
-
-        except Exception as e:
-            print(e, stdout.read(), stderr.read())
+            self.vm_meta['name_label'] = self.vm_name
+            self.vm_meta['user_version'] = '1'
+            self.vm_meta['is_a_template'] = False
+            self.vm_meta['affinity'] = 'NULL'
+            vm_obj = self.api.VM.create(self.vm_meta)
+            print('vm object!', vm_obj)
+            return vm_obj
+        except BaseException as e:
+            error = 'Failed create VM: {}; cause: {}'.format(self.vm_name, str(e))
+            app.LOGGER.error(error)
+            raise BaseException(error)
 
     def restore_vdi(self, vm_obj, vdis, vm_name):
         print('restoring vdi', vdis)
-        self.mount_folder()
 
         vm_state = self.session.xenapi.VM.get_power_state(vm_obj)
         print(vm_state)
@@ -121,4 +131,4 @@ class Restore:
             self.session.xenapi.VM.clean_shutdown(vm_obj)
             self.restore_vdi(vm_obj, vdis)
 
-        self.umount_folder()
+        self.__umount_folder()
