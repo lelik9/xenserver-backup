@@ -146,7 +146,7 @@ class BackupModel:
                     'tags': ,
                     'managed': ,
                     'missing': ,
-                    'vbd_spec': [{
+                    'vbd_meta': [{
                         'device': ,
                         'userdevice': ,
                         'bootable': ,

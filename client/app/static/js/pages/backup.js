@@ -29,9 +29,9 @@ $('#restore').on('click', function () {
     console.log($('#hostSelect').value);
     var data = {
         vm_name: document.getElementById('vmName').value,
-        host_obj: "OpaqueRef:012c9d17-05b2-0a07-26a9-b0cf2f82b2e8",
-        sr: document.getElementById('srSelect').value,
-        backup_id: "2016-07-22_17-56"
+        host_obj: "OpaqueRef:b7913b8e-6438-376e-5ced-fe9d6ce82e5e",
+        sr: "OpaqueRef:ad36d99e-83aa-adf9-b68f-d3f38be19ae6",
+        backup_id: "2016-07-25_14-43"
     };
     console.log('!!!!!!!!!!');
     request('/backup/', 'UPDATE', data, null, onSuccess)

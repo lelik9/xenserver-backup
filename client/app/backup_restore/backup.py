@@ -3,16 +3,13 @@ import json
 from datetime import datetime
 import time
 
-from sessions import *
-from common import *
+from sessions import Connection
+from base_backup import BaseBackup
 from app import app
 from app.models import HostsModel, BackupModel
 
-NFS_SR_PATH = '/var/run/sr-mount/'
-ISCSI_SR_PATH = '/dev/VG_XenStorage-'
 
-
-class VmBackup:
+class VmBackup(BaseBackup):
     """
         Class fo backup_restore VM
     """
@@ -20,11 +17,12 @@ class VmBackup:
     def __init__(self, vm_obj, backup_sr):
         self.backup_time = datetime.now().strftime("%Y-%m-%d_%H-%M")
         self.vm_obj = vm_obj
-        self.session, self.ssh_session = establish_session(vm_obj, 'get_pool_of_vm')
+        self.connection = Connection(vm_obj, 'get_pool_of_vm')
+        self.session, self.ssh_session = self.connection.get_sessions()
         self.backup_sr = backup_sr
         self.api = self.session.xenapi
         self.vm_name = self.api.VM.get_name_label(self.vm_obj)
-        self.backup_dir = BACKUP_PATH + '/' + self.vm_name
+        self.backup_dir = self.BACKUP_PATH + '/' + self.vm_name
 
     def __get_vdi(self, vm):
         vbds = self.api.VM.get_VBDs(vm)
@@ -32,8 +30,7 @@ class VmBackup:
         for vbd_obj in vbds:
             try:
                 vdi_obj = self.api.VBD.get_VDI(vbd_obj)
-                vbd_spec = {
-                    'device': self.api.VBD.get_device(vbd_obj),
+                vbd_meta = {
                     'userdevice': self.api.VBD.get_userdevice(vbd_obj),
                     'bootable': self.api.VBD.get_bootable(vbd_obj),
                     'mode': self.api.VBD.get_mode(vbd_obj),
@@ -52,7 +49,7 @@ class VmBackup:
                 else:
                     sm_config = self.api.VDI.get_sm_config(vdi_obj)
                     vdi_uuid = sm_config['vhd-parent']
-                    yield vdi_obj, vdi_uuid, vbd_spec
+                    yield vdi_obj, vdi_uuid, vbd_meta
 
             except Exception as e:
                 app.LOGGER.error('Get vdi of vbd {} failed; cause: {}'.format(vbd_obj, e))
@@ -81,7 +78,7 @@ class VmBackup:
             command = 'dd if={disk} of=' + self.backup_dir + '/' + file_name + ' bs=1M'
 
             if sr['type'] == 'lvmoiscsi':
-                path = ISCSI_SR_PATH + sr['uuid']
+                path = self.ISCSI_SR_PATH + sr['uuid']
                 disk = path + '/VHD-' + vdi_uuid
                 com = command.format(disk=disk)
                 print('disk', disk)
@@ -92,7 +89,7 @@ class VmBackup:
                 print('out ', stdout.read(), ' err ', stderr.read())
 
             elif sr['type'] in ('nfs', 'ext'):
-                path = NFS_SR_PATH + sr['uuid']
+                path = self.NFS_SR_PATH + sr['uuid']
                 disk = path + '/' + vdi_uuid + '.vhd'
                 print('disk', disk)
                 com = command.format(disk=disk)
@@ -114,7 +111,7 @@ class VmBackup:
             raise Exception(err)
 
     def make_backup(self, backup_sr):
-        mount_folder(self.ssh_session, backup_sr)
+        self._mount_folder(backup_sr)
 
         self.__create_backup_dir()
 
@@ -128,7 +125,7 @@ class VmBackup:
                 sr = self.__get_sr(vdi_obj)
                 file_name = self.__copy_disk(sr, vdi_obj, uuid)
 
-                vdi_spec = self.__get_vdi_meta(vdi_obj=vdi_obj, vbd_spec=vbd, backup_file=file_name)
+                vdi_spec = self.__get_vdi_meta(vdi_obj=vdi_obj, vbd_meta=vbd, backup_file=file_name)
 
                 vdis_meta.append(vdi_spec)
                 self.api.VDI.destroy(vdi_obj)
@@ -144,9 +141,8 @@ class VmBackup:
             raise Exception(error)
         finally:
             self.api.VM.destroy(snapshot)
-            umount_folder(self.ssh_session)
-            disconnect(self.session)
-            ssh_disconnect(self.ssh_session)
+            self._umount_folder()
+            self.connection.disconnect()
 
     def __make_meta_file(self, vdis_meta, vm_meta, vifs_meta):
         meta = json.dumps({
@@ -168,7 +164,7 @@ class VmBackup:
             'backup_sr': self.backup_sr['_id']
         })
 
-    def __get_vdi_meta(self, vdi_obj, vbd_spec, backup_file):
+    def __get_vdi_meta(self, vdi_obj, vbd_meta, backup_file):
         vdi_record = self.api.VDI.get_record(vdi_obj)
 
         vdi_meta = {
@@ -179,9 +175,7 @@ class VmBackup:
             'read_only': vdi_record['read_only'],
             'other_config': vdi_record['other_config'],
             'tags': vdi_record['tags'],
-            'managed': vdi_record['managed'],
-            'missing': vdi_record['missing'],
-            'vbd_spec': vbd_spec,
+            'vbd_meta': vbd_meta,
             'backup_file': backup_file
         }
         return vdi_meta
@@ -216,46 +210,10 @@ class VmBackup:
                 'MTU': vif_record['MTU'],
                 'MAC': vif_record['MAC'],
                 'other_config': vif_record['other_config'],
+                'qos_algorithm_type': vif_record['qos_algorithm_type'],
+                'qos_algorithm_params': vif_record['qos_algorithm_params'],
                 'name': self.api.network.get_record(vif_record['network'])['name_label']
             }
             vifs.append(vif)
 
         return vifs
-
-# if __name__ == "__main__":
-#
-
-# 	session = connect('', '')
-
-# 	session = connect('login', 'password', '10.10.10.149')
-# 	ssh_session = ssh_connect()
-# 	mount_folder(ssh_session)
-#
-# 	vms = get_vm(session)
-#
-# 	for vm_name in vms.keys():
-# 		print(session, vms[vm_name], vm_name)
-# 		make_backup(session, u'OpaqueRef:f7e12f0d-d80a-5f89-5028-2b084cc65ad5',
-# 		            u'cent')
-# 		# try:
-# 		# 	backup_dir = create_backup_dir(ssh_session, vm_name)
-# 		# except Exception as e:
-# 		# 	print(e)
-# 		# 	break
-# 		#
-# 		# try:
-# 		# 	snapshot = create_snapshot(session, vms[vm_name], vm_name)
-# 		# 	vdi_uuids = get_vdi(session, snapshot)
-# 		#
-# 		# 	for vdi, vdi_uuid in vdi_uuids:
-# 		# 		sr = get_sr(session, vdi)
-# 		# 		copy_disk(sr, vdi, vdi_uuid, ssh_session, backup_dir, session)
-# 		# 		session.xenapi.VDI.destroy(vdi)
-# 		#
-# 		# 	session.xenapi.VM.destroy(snapshot)
-# 		# except Exception as e:
-# 		# 	# FIXME: add to log
-# 		# 	print('exception', e)
-#
-# 	ssh_disconnect(ssh_session)
-# 	disconnect(session)

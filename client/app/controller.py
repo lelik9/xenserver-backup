@@ -153,10 +153,11 @@ class VmBackupController:
         vdis_meta = backup_meta['vdis']
         vifs_meta = backup_meta['vifs']
         backup_id = backup_meta['backup_sr']
+        old_vm_name = backup_meta['vm_name']
 
         backup_sr = BackupStorageModel.get_backup_sr(backup_id)
 
-        restore = Restore(host_obj, vm_name, sr, vm_meta, vdis_meta, vifs_meta, backup_sr)
+        restore = Restore(host_obj, vm_name, sr, vm_meta, vdis_meta, vifs_meta, backup_sr, old_vm_name)
         restore.restore_vm()
 
 
@@ -189,7 +190,7 @@ class VmBackupController:
             res = list(BackupModel.get_backups(backup_id))[0]
 
             BackupModel.remove_backup(backup_id)
-            backup_restore.__mount_folder(ssh_session)
+            backup_restore._mount_folder(ssh_session)
 
             for vdi in res['vdis']:
                 stdin, stdout, stderr = ssh_session.exec_command(
@@ -198,7 +199,7 @@ class VmBackupController:
                 err = stderr.read()
                 if err is not None:
                     print(err)
-            backup_restore.__umount_folder(ssh_session)
+            backup_restore._umount_folder(ssh_session)
         except:
             pass
         finally:

@@ -1,134 +1,116 @@
 # coding=utf-8
 from sessions import *
-from common import *
-
+from base_backup import BaseBackup
 from app import app
 from app.models import HostsModel, BackupModel
 
 
-class Restore:
-    NFS_SR_PATH = '/var/run/sr-mount/'
-    ISCSI_SR_PATH = '/dev/VG_XenStorage-'
-
-    def __init__(self, host_obj, vm_name, sr, vm_meta, vdis_meta, vifs_meta, backup_sr):
-        self.session, self.ssh_session = establish_session(host_obj, 'get_pool_of_host')
+class Restore(BaseBackup):
+    def __init__(self, host_obj, vm_name, sr, vm_meta, vdis_meta, vifs_meta, backup_sr, old_vm_name):
+        self.connection = Connection(host_obj, 'get_pool_of_host')
+        self.session, self.ssh_session = self.connection.get_sessions()
         self.vm_name = vm_name
         self.sr = sr
         self.vm_meta = vm_meta
+        self.old_vm_name = old_vm_name
         self.vdis_meta = vdis_meta
         self.vifs_meta = vifs_meta
         self.backup_sr = backup_sr
         self.api = self.session.xenapi
 
     def restore_vm(self):
-        mount_folder(self.ssh_session, self.backup_sr)
+        """
+            Method for restoring VM
+        """
+        self._mount_folder(self.backup_sr)
 
-        vm_obj = self.__create_vm()
+        try:
+            vm_obj = self.__create_vm()
+            self.__create_vif(vm_obj=vm_obj)
+            self.__create_vdi(vm_obj=vm_obj)
+        except BaseException as e:
+            error = 'VM restore failed. {}'.format(str(e))
+            app.LOGGER.critical(error)
+            raise Exception(error)
+        finally:
+            self._umount_folder()
+            self.connection.disconnect()
 
     def __create_vm(self):
         try:
-            self.vm_meta['name_label'] = self.vm_name
-            self.vm_meta['user_version'] = '1'
-            self.vm_meta['is_a_template'] = False
-            self.vm_meta['affinity'] = 'NULL'
-            vm_obj = self.api.VM.create(self.vm_meta)
-            print('vm object!', vm_obj)
+            vm_templ_obj = self.api.VM.get_by_name_label('Other install media')
+            vm_templ_meta = self.api.VM.get_record(vm_templ_obj[0])
+
+            for key in vm_templ_meta:
+                if key in self.vm_meta.keys():
+                    vm_templ_meta[key] = self.vm_meta[key]
+
+            vm_templ_meta['name_label'] = self.vm_name
+            vm_templ_meta['is_a_template'] = False
+
+            vm_obj = self.api.VM.create(vm_templ_meta)
             return vm_obj
         except BaseException as e:
             error = 'Failed create VM: {}; cause: {}'.format(self.vm_name, str(e))
             app.LOGGER.error(error)
             raise BaseException(error)
 
-    def restore_vdi(self, vm_obj, vdis, vm_name):
-        print('restoring vdi', vdis)
+    def __create_vif(self, vm_obj):
+        for vif in self.vifs_meta:
+            vif['network'] = self.api.network.get_by_name_label(vif['name'])[0]
+            vif.pop('name', None)
+            vif['VM'] = vm_obj
+            self.api.VIF.create(vif)
 
-        vm_state = self.session.xenapi.VM.get_power_state(vm_obj)
-        print(vm_state)
-        if vm_state == 'Halted':
-            vbds = self.session.xenapi.VM.get_VBDs(vm_obj)
-            # FIXME: SR stub
-            sr_obj = self.session.xenapi.SR.get_by_name_label('iSCSI virtual '
-                                                              'disk storage')[0]
-            sr_uuid = self.session.xenapi.SR.get_uuid(sr_obj)
-            print('vbds', vbds)
-            if vbds is not None:
-                # Removes all disk from VM
-                for vbd in vbds:
-                    vdi = self.session.xenapi.VBD.get_VDI(vbd)
-                    if not 'NULL' in vdi:
-                        sr_obj = self.session.xenapi.VDI.get_SR(vdi)
-                        self.session.xenapi.VDI.forget(vdi)
-                        self.session.xenapi.VDI.destroy(vdi)
-                        self.session.xenapi.VBD.destroy(vbd)
+    def __create_vdi(self, vm_obj):
+        for vdi in self.vdis_meta:
+            vdi['SR'] = self.sr[0]
+            vbd = vdi.pop('vbd_meta', None)
 
-            # Creating new VDI and restore data
-            n = 0
-            for vdi in vdis:
-                vdi_spec = {
-                    'name_label': vdi['name'],
-                    'SR': sr_obj,
-                    'virtual_size': vdi['size'],
-                    'type': 'user',
-                    'sharable': False,
-                    'read_only': False,
-                    'other_config': {}
-                }
-                try:
-                    vdi_obj = self.session.xenapi.VDI.create(vdi_spec)
-                except Exception as e:
-                    # FIXME: logging!
-                    print('vdi dont create: ' + str(e))
-                    return
+            vdi_obj = self.api.VDI.create(vdi)
+            self.__create_vbd(vm_obj=vm_obj, vdi_obj=vdi_obj, vbd=vbd)
+            self.__clone_backup_to_vdi(vdi_obj=vdi_obj, vdi_meta=vdi)
 
-                # Create VBD for current VDI
-                vbd_spec = {
-                    'VM': vm_obj,
-                    'VDI': vdi_obj,
-                    'device': vdi['vbd']['device'],
-                    'userdevice': str(n),
-                    'bootable': vdi['vbd']['bootable'],
-                    'mode': vdi['vbd']['mode'],
-                    'type': vdi['vbd']['type'],
-                    'empty': False,
-                    'unpluggable': vdi['vbd']['unplag'],
-                    'other_config': {},
-                    'qos_algorithm_type': '',
-                    'qos_algorithm_params': {}
-                }
-                try:
-                    vbd_obj = self.session.xenapi.VBD.create(vbd_spec)
-                    n += 1
-                except Exception as e:
-                    # FIXME: logging!
-                    print('vbd dont create: ' + str(e))
-                    return
+    def __create_vbd(self, vm_obj, vdi_obj, vbd):
+        vbd['VM'] = vm_obj
+        vbd['VDI'] = vdi_obj
 
-                # Getting LV
-                vdi_uuid = self.session.xenapi.VDI.get_uuid(vdi_obj)
-                lvm = self.ISCSI_SR_PATH + sr_uuid + '/' + 'VHD-' + vdi_uuid
+        self.api.VBD.create(vbd)
 
-                # Activating LV
-                stdin, stdout, stderr = self.ssh_session.exec_command(
-                    "lvchange -ay " + lvm)
+    def __clone_backup_to_vdi(self, vdi_obj, vdi_meta):
+        sr_type = self.api.SR.get_type(self.sr[0])
+        sr_uuid = self.api.SR.get_uuid(self.sr[0])
+        vdi_uuid = self.session.xenapi.VDI.get_uuid(vdi_obj)
 
-                error = stderr.read()
+        restore_command = "dd if=" + self.BACKUP_PATH + "/" + self.old_vm_name + "/" \
+                          + vdi_meta['backup_file'] + " of={} bs=1M"
 
-                if error != '':
-                    print('LV activation failed ' + error)
+        if sr_type == 'lvmoiscsi':
+            lvm = self.ISCSI_SR_PATH+sr_uuid+'/VHD-'+vdi_uuid
+            # Activating LV
+            stdin, stdout, stderr = self.ssh_session.exec_command(
+                "lvchange -ay " + lvm)
 
-                # Restoring data on disk
-                command = "dd if=" + self.BACKUP_PATH + "/" + vm_name + "/" \
-                          + vdi['name'] + " of=" + lvm + " bs=102400"
-                print(command)
-                stdin, stdout, stderr = self.ssh_session.exec_command(command)
-                error = stderr.read()
+            error = stderr.read()
 
-                if error != '':
-                    print('Restore vdi failed ' + error + stdout.read())
+            if error != '':
+                err = 'LV activation failed: {}'.format(error)
+                app.LOGGER.error(err)
+                raise BaseException(err)
 
+            restore_command = restore_command.format(lvm)
+        elif sr_type in ('nfs', 'ext'):
+            vhd_path = self.NFS_SR_PATH+sr_uuid+'/'+vdi_uuid+'.vhd'
+            restore_command = restore_command.format(vhd_path)
+        try:
+            stdin, stdout, stderr = self.ssh_session.exec_command(restore_command)
+            error = stderr.read()
 
-        else:
-            self.session.xenapi.VM.clean_shutdown(vm_obj)
-            self.restore_vdi(vm_obj, vdis)
-
-        self.__umount_folder()
+            if error != '' and 'records' not in error:
+                err = 'Restore vdi failed: {}'.format(error)
+                app.LOGGER.error(err)
+                raise BaseException(err)
+        except BaseException as e:
+            err = 'Restore vdi failed: {}'.format(str(e))
+            app.LOGGER.error(err)
+            raise BaseException(err)
