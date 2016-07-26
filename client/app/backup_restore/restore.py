@@ -7,8 +7,7 @@ from app.models import HostsModel, BackupModel
 
 class Restore(BaseBackup):
     def __init__(self, host_obj, vm_name, sr, vm_meta, vdis_meta, vifs_meta, backup_sr, old_vm_name):
-        self.connection = Connection(host_obj, 'get_pool_of_host')
-        self.session, self.ssh_session = self.connection.get_sessions()
+        self.session, self.ssh_session = establish_session(host_obj, 'get_pool_of_host')
         self.vm_name = vm_name
         self.sr = sr
         self.vm_meta = vm_meta
@@ -34,7 +33,8 @@ class Restore(BaseBackup):
             raise Exception(error)
         finally:
             self._umount_folder()
-            self.connection.disconnect()
+            disconnect(self.session)
+            ssh_disconnect(self.ssh_session)
 
     def __create_vm(self):
         try:

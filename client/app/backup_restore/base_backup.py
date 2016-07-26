@@ -17,6 +17,7 @@ class BaseBackup:
                                               self.BACKUP_PATH)
 
                 app.LOGGER.info('Mounted {} to {}'.format(mount_path, self.BACKUP_PATH))
+                return True
             except Exception as e:
                 error = 'Failed mount folder: {}; cause: {}'.format(mount_path, str(e))
                 app.LOGGER.error(error)

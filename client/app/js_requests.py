@@ -159,14 +159,15 @@ def rm_backup():
 @app.route('/backup/', methods=['UPDATE'])
 def restore_vm():
     req = dict(request.form)
-    result = 'Remove backup success'
+    result = 'Restore backup success'
     res_type = 'success'
 
-    try:
-        VmBackupController.restore_backup(req['vm_name'][0], req['host_obj'][0], req['sr'],
-                                          req['backup_id'][0])
-    except BaseException as e:
-        res_type = 'error'
-        result = str(e)
+    print(req)
+    # try:
+    #     VmBackupController.restore_backup(req['vm_name'][0], req['host_obj'][0], req['sr'],
+    #                                       req['backup_id'][0])
+    # except BaseException as e:
+    #     res_type = 'error'
+    #     result = str(e)
 
     return response(result=result, resp_type=res_type)

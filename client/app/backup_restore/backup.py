@@ -3,7 +3,7 @@ import json
 from datetime import datetime
 import time
 
-from sessions import Connection
+from sessions import *
 from base_backup import BaseBackup
 from app import app
 from app.models import HostsModel, BackupModel
@@ -17,12 +17,13 @@ class VmBackup(BaseBackup):
     def __init__(self, vm_obj, backup_sr):
         self.backup_time = datetime.now().strftime("%Y-%m-%d_%H-%M")
         self.vm_obj = vm_obj
-        self.connection = Connection(vm_obj, 'get_pool_of_vm')
-        self.session, self.ssh_session = self.connection.get_sessions()
+        self.session, self.ssh_session = establish_session(vm_obj, 'get_pool_of_vm')
         self.backup_sr = backup_sr
         self.api = self.session.xenapi
         self.vm_name = self.api.VM.get_name_label(self.vm_obj)
         self.backup_dir = self.BACKUP_PATH + '/' + self.vm_name
+
+        res = self._mount_folder(backup_sr)
 
     def __get_vdi(self, vm):
         vbds = self.api.VM.get_VBDs(vm)
@@ -84,9 +85,6 @@ class VmBackup(BaseBackup):
                 print('disk', disk)
                 # Activate VHD for cloning
                 self.ssh_session.exec_command('lvchange -ay ' + disk)
-                print('command ', com)
-                stdin, stdout, stderr = self.ssh_session.exec_command(com)
-                print('out ', stdout.read(), ' err ', stderr.read())
 
             elif sr['type'] in ('nfs', 'ext'):
                 path = self.NFS_SR_PATH + sr['uuid']
@@ -94,14 +92,26 @@ class VmBackup(BaseBackup):
                 print('disk', disk)
                 com = command.format(disk=disk)
 
-                stdin, stdout, stderr = self.ssh_session.exec_command(com)
-                print(stdout.read(), stderr.read())
+            print('command ', com)
+
+            stdin, stdout, stderr = self.ssh_session.exec_command(com)
+            error = stderr.read()
+            print(stdout.read(), error)
+
+            if error != '' and 'records' not in error:
+                err = 'Copy disk error: {}'.format(error)
+                app.LOGGER.error(err)
+                raise BaseException(err)
+
             return file_name
 
         except Exception as e:
-            print('Copy disk error: ' + e)
+            print('Copy disk error: {}' + str(e))
 
     def __create_backup_dir(self):
+        # Hack for waiting complete mount
+        time.sleep(1)
+
         stdin, stdout, stderr = self.ssh_session.exec_command('mkdir -p ' + self.backup_dir)
         error = stderr.read()
 
@@ -110,9 +120,7 @@ class VmBackup(BaseBackup):
                                                                                        error))
             raise Exception(err)
 
-    def make_backup(self, backup_sr):
-        self._mount_folder(backup_sr)
-
+    def make_backup(self):
         self.__create_backup_dir()
 
         snapshot = self.__create_snapshot()
@@ -142,7 +150,8 @@ class VmBackup(BaseBackup):
         finally:
             self.api.VM.destroy(snapshot)
             self._umount_folder()
-            self.connection.disconnect()
+            disconnect(self.session)
+            ssh_disconnect(self.ssh_session)
 
     def __make_meta_file(self, vdis_meta, vm_meta, vifs_meta):
         meta = json.dumps({

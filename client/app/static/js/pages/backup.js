@@ -26,14 +26,14 @@ function fillBackupTable() {
 fillBackupTable();
 
 $('#restore').on('click', function () {
-    console.log($('#hostSelect').value);
+    console.log($('#hostSelect :selected').val());
     var data = {
         vm_name: document.getElementById('vmName').value,
         host_obj: "OpaqueRef:b7913b8e-6438-376e-5ced-fe9d6ce82e5e",
         sr: "OpaqueRef:ad36d99e-83aa-adf9-b68f-d3f38be19ae6",
         backup_id: "2016-07-25_14-43"
     };
-    console.log('!!!!!!!!!!');
+    console.log($('#srSelect :selected').val());
     request('/backup/', 'UPDATE', data, null, onSuccess)
 });
 

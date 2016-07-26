@@ -16,7 +16,7 @@ class HostController:
         self.ip = ip
         self.password = password
         self.user = user
-
+        # self.connect = Co
         self.session = sessions.connect(user, password, ip)
         self.api = self.session.xenapi
 
@@ -139,7 +139,7 @@ class VmBackupController:
         vm_backup = VmBackup(vm_obj=vm_obj, backup_sr=sr)
 
         try:
-            vm_backup.make_backup(backup_sr=sr)
+            vm_backup.make_backup()
         except BaseException as e:
             error = u"VM backup failed, cause: {}".format(str(e))
             app.LOGGER.error(error)
@@ -161,64 +161,31 @@ class VmBackupController:
         restore.restore_vm()
 
 
-        # try:
-        #     vdis = backup_restore.make_backup(session=session,
-        #                                       ssh_session=ssh_session,
-        #                                       vm_obj=vm['vm_object'],
-        #                                       vm_name=vm['vm_name'])
-        # except Exception as e:
-        #     print(e)
-        #     backup_result = {'result': 'fail'}
-        #     return backup_result
-        #
-        # BackupModel.add_backup_info(vm_name=vm['vm_name'],
-        #                             vm_id=vm_id,
-        #                             vdis=vdis,
-        #                             date=datetime.now().strftime(
-        #                                 "%Y-%m-%d_%H-%m"))
-        #
-        # sessions.disconnect(session)
-        # backup_result = {'result': 'ok'}
-        # return backup_result
+    # def remove_backup(self, backup_id, vm_id):
+    #     vm = VmModel.get_vm(vm_id)
+    #     host_id = vm['host_id']
+    #     session, ssh_session = _establish_session(host_id)
+    #
+    #     try:
+    #         res = list(BackupModel.get_backups(backup_id))[0]
+    #
+    #         BackupModel.remove_backup(backup_id)
+    #         backup_restore._mount_folder(ssh_session)
+    #
+    #         for vdi in res['vdis']:
+    #             stdin, stdout, stderr = ssh_session.exec_command(
+    #                 'rm -f /media/' + vm['vm_name'] + '/' +
+    #                 vdi['name'])
+    #             err = stderr.read()
+    #             if err is not None:
+    #                 print(err)
+    #         backup_restore._umount_folder(ssh_session)
+    #     except:
+    #         pass
+    #     finally:
+    #         sessions.ssh_disconnect(ssh_session)
+    #         sessions.disconnect(session)
 
-    def remove_backup(self, backup_id, vm_id):
-        vm = VmModel.get_vm(vm_id)
-        host_id = vm['host_id']
-        session, ssh_session = _establish_session(host_id)
-
-        try:
-            res = list(BackupModel.get_backups(backup_id))[0]
-
-            BackupModel.remove_backup(backup_id)
-            backup_restore._mount_folder(ssh_session)
-
-            for vdi in res['vdis']:
-                stdin, stdout, stderr = ssh_session.exec_command(
-                    'rm -f /media/' + vm['vm_name'] + '/' +
-                    vdi['name'])
-                err = stderr.read()
-                if err is not None:
-                    print(err)
-            backup_restore._umount_folder(ssh_session)
-        except:
-            pass
-        finally:
-            sessions.ssh_disconnect(ssh_session)
-            sessions.disconnect(session)
-
-    def restore_vdi(self, backup_id, vm_id):
-        vm = VmModel.get_vm(vm_id)
-        host_id = vm['host_id']
-        session, ssh_session = _establish_session(host_id)
-
-        try:
-            res = list(BackupModel.get_backups(backup_id))[0]
-            restore = Restore(session, ssh_session)
-            print('restore')
-            restore.restore_vdi(vm['vm_object'], res['vdis'], vm['vm_name'])
-
-        except Exception as e:
-            print('restore fail ', e)
 
 # class SrController:
 #     def scan_sr(self, host_id):
