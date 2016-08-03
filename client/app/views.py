@@ -24,7 +24,8 @@ def storage():
         try:
             sr = []
             if request.args['get'] == 'host_sr':
-                    sr = HostsModel.get_sr()
+                hosts_model = HostsModel.get_instance()
+                sr = hosts_model.get_sr()
             elif request.args['get'] == 'backup_sr':
                     sr = BackupStorageModel.get_backup_sr_wo_login()
 
@@ -39,7 +40,8 @@ def storage():
 def hosts():
     if 'get' in request.args.keys():
         try:
-            hosts = HostsModel.get_hosts()
+            hosts_model = HostsModel.get_instance()
+            hosts = hosts_model.get_hosts()
             return response(result=hosts, resp_type='success')
         except BaseException as e:
             return response(result=str(e), resp_type='error')
@@ -52,7 +54,8 @@ def vms():
 
     if 'get' in request.args.keys():
         try:
-            vm = HostsModel.get_vm()
+            hosts_model = HostsModel.get_instance()
+            vm = hosts_model.get_vm()
             return response(result=vm, resp_type='success')
         except BaseException as e:
             return response(result=str(e), resp_type='error')
@@ -61,7 +64,8 @@ def vms():
 
 @app.route('/backups/', methods=['GET'])
 def backups():
-    hosts = HostsModel.get_hosts()
+    hosts_model = HostsModel.get_instance()
+    hosts = hosts_model.get_hosts()
 
     if 'get' in request.args.keys():
         try:

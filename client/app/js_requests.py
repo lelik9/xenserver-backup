@@ -49,15 +49,7 @@ def rm_host():
     res_type = 'success'
 
     try:
-        for host in req['check']:
-            try:
-                r = HostsModel.rm_pool(host)
-                if r['ok'] == 0:
-                    result = 'Remove pool failed'
-                    res_type = 'error'
-            except errors as e:
-                result = 'Remove pool failed'
-                res_type = 'error'
+        pass
     except KeyError:
         result = 'Please select host'
         res_type = 'error'

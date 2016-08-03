@@ -1,4 +1,3 @@
-from __future__ import print_function
 from app import mongo
 from bson import ObjectId
 
@@ -45,66 +44,73 @@ class HostsModel:
             }
 
     """
-    def __init__(self):
-        pass
+    instance = None
+    db = None
 
-    @staticmethod
-    def add_host(args):
-        mongo.db.hosts.insert(args)
+    def __init__(self, default=False):
+        if not default:
+            raise SyntaxError("For creating class object use 'get_instance' method")
+        else:
+            HostsModel.instance = self
 
-    @staticmethod
-    def get_hosts():
+    @classmethod
+    def get_instance(cls):
+        if cls.instance is None:
+            HostsModel(default=True)
+        return cls.instance
+
+    @classmethod
+    def set_db(cls, db):
+        cls.db = db
+
+    def add_host(self, args):
+        self.db.insert(args)
+
+    def get_hosts(self):
         nodes = []
 
-        for node in mongo.db.hosts.find({}, {'_id': 0, 'vm': 0, 'sr': 0, 'login': 0,
+        for node in self.db.find({}, {'_id': 0, 'vm': 0, 'sr': 0, 'login': 0,
                                              'password': 0}):
             nodes.append(node)
 
         return nodes
 
-    @staticmethod
-    def get_vm():
+    def get_vm(self):
         vm = []
 
-        for node in mongo.db.hosts.find({}, {'_id': 0, 'hosts': 0, 'sr': 0, 'login': 0,
+        for node in self.db.find({}, {'_id': 0, 'hosts': 0, 'sr': 0, 'login': 0,
                                              'password': 0}):
             vm.append(node)
 
         return vm
 
-    @staticmethod
-    def get_sr():
+    def get_sr(self):
         sr = []
 
-        for node in mongo.db.hosts.find({}, {'_id': 0, 'hosts': 0, 'vm': 0, 'login': 0,
+        for node in self.db.find({}, {'_id': 0, 'hosts': 0, 'vm': 0, 'login': 0,
                                              'password': 0}):
             sr.append(node)
 
         return sr
 
-    @staticmethod
-    def get_pool_of_vm(vm_obj):
-        host = mongo.db.hosts.find_one({'vm.obj': vm_obj})
+    def get_pool_of_vm(self, vm_obj):
+        host = self.db.find_one({'vm.obj': vm_obj})
 
         return host
 
-    @staticmethod
-    def get_pool_of_host(host_obj):
-        host = mongo.db.hosts.find_one({'hosts.obj': host_obj})
+    def get_pool_of_host(self, host_obj):
+        host = self.db.find_one({'hosts.obj': host_obj})
 
         return host
 
-    @staticmethod
-    def set_host_info(host_ip, key, info):
-        return mongo.db.hosts.update({'master': host_ip}, {'$set': {key: info}})
+    def set_host_info(self, host_ip, key, info):
+        return self.db.update({'master': host_ip}, {'$set': {key: info}})
 
-    @staticmethod
-    def get_pool(pool_name):
-        return mongo.db.hosts.find_one({'pool': pool_name})
+    def get_pool(self, pool_name):
+        return self.db.find_one({'pool': pool_name})
 
-    @staticmethod
-    def rm_pool(host):
-        return mongo.db.hosts.remove({'hosts.obj': host})
+    def rm_pool(self, host):
+        return self.db.remove({'hosts.obj': host})
 
 
 class VmModel:
