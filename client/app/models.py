@@ -1,8 +1,23 @@
-from app import mongo
+# coding=utf-8
 from bson import ObjectId
 
 
-class HostsModel:
+class BaseModel:
+    instance = None
+    db = None
+
+    @classmethod
+    def get_instance(cls):
+        if cls.instance is None:
+            cls(default=True)
+        return cls.instance
+
+    @classmethod
+    def set_db(cls, db):
+        cls.db = db
+
+
+class HostsModel(BaseModel):
     """
         Host model:
             {
@@ -44,8 +59,6 @@ class HostsModel:
             }
 
     """
-    instance = None
-    db = None
 
     def __init__(self, default=False):
         if not default:
@@ -53,24 +66,13 @@ class HostsModel:
         else:
             HostsModel.instance = self
 
-    @classmethod
-    def get_instance(cls):
-        if cls.instance is None:
-            HostsModel(default=True)
-        return cls.instance
-
-    @classmethod
-    def set_db(cls, db):
-        cls.db = db
-
     def add_host(self, args):
         self.db.insert(args)
 
     def get_hosts(self):
         nodes = []
 
-        for node in self.db.find({}, {'_id': 0, 'vm': 0, 'sr': 0, 'login': 0,
-                                             'password': 0}):
+        for node in self.db.find({}, {'_id': 0, 'vm': 0, 'sr': 0, 'login': 0, 'password': 0}):
             nodes.append(node)
 
         return nodes
@@ -78,8 +80,7 @@ class HostsModel:
     def get_vm(self):
         vm = []
 
-        for node in self.db.find({}, {'_id': 0, 'hosts': 0, 'sr': 0, 'login': 0,
-                                             'password': 0}):
+        for node in self.db.find({}, {'_id': 0, 'hosts': 0, 'sr': 0, 'login': 0, 'password': 0}):
             vm.append(node)
 
         return vm
@@ -87,8 +88,7 @@ class HostsModel:
     def get_sr(self):
         sr = []
 
-        for node in self.db.find({}, {'_id': 0, 'hosts': 0, 'vm': 0, 'login': 0,
-                                             'password': 0}):
+        for node in self.db.find({}, {'_id': 0, 'hosts': 0, 'vm': 0, 'login': 0, 'password': 0}):
             sr.append(node)
 
         return sr
@@ -113,30 +113,33 @@ class HostsModel:
         return self.db.remove({'hosts.obj': host})
 
 
-class VmModel:
-    @staticmethod
-    def add_vms(**kwargs):
-        mongo.db.vm.insert(kwargs)
-
-    @staticmethod
-    def get_vms(host_id):
-        if host_id == 'all':
-            vms = mongo.db.vm.find()
+class VmModel(BaseModel):
+    def __init__(self, default=False):
+        if not default:
+            raise SyntaxError("For creating class object use 'get_instance' method")
         else:
-            vms = mongo.db.vm.find({'host_id': host_id})
+            BackupModel.instance = self
+
+    def add_vms(self, **kwargs):
+        self.db.insert(kwargs)
+
+    def get_vms(self, host_id):
+        if host_id == 'all':
+            vms = self.db.find()
+        else:
+            vms = self.db.find({'host_id': host_id})
 
         all_vm = list(vms)
 
         return all_vm
 
-    @staticmethod
-    def get_vm(vm_id):
-        vm = mongo.db.vm.find_one({'_id': ObjectId(vm_id)})
+    def get_vm(self, vm_id):
+        vm = self.db.find_one({'_id': ObjectId(vm_id)})
 
         return vm
 
 
-class BackupModel:
+class BackupModel(BaseModel):
     """
         Backup meta model:
             {
@@ -192,26 +195,29 @@ class BackupModel:
                 'backup_sr': storage when store backup: str
             }
     """
-    @staticmethod
-    def add_backup_info(obj):
-        mongo.db.backup.insert(obj)
 
-    @staticmethod
-    def get_backup(id):
-        return mongo.db.backup.find_one({'_id': id})
+    def __init__(self, default=False):
+        if not default:
+            raise SyntaxError("For creating class object use 'get_instance' method")
+        else:
+            BackupModel.instance = self
 
-    @staticmethod
-    def remove_backup(id):
-        mongo.db.backup.remove({'_id': ObjectId(id)})
+    def add_backup_info(self, obj):
+        self.db.insert(obj)
 
-    @staticmethod
-    def get_backups():
-        backups = list(mongo.db.backup.find({}, {'vm_name': 1}))
+    def get_backup(self, id):
+        return self.db.find_one({'_id': id})
+
+    def remove_backup(self, id):
+        self.db.remove({'_id': ObjectId(id)})
+
+    def get_backups(self):
+        backups = list(self.db.find({}, {'vm_name': 1}))
 
         return backups
 
 
-class BackupStorageModel:
+class BackupStorageModel(BaseModel):
     """
         Backup storage model:
             {
@@ -222,34 +228,24 @@ class BackupStorageModel:
             'password': password for smb share,
         }
     """
-    @staticmethod
-    def add_storage(obj):
-        mongo.db.backup_sr.insert(obj)
 
-    @staticmethod
-    def get_backup_sr_wo_login():
+    def __init__(self, default=False):
+        if not default:
+            raise SyntaxError("For creating class object use 'get_instance' method")
+        else:
+            BackupStorageModel.instance = self
+
+    def add_storage(self, obj):
+        self.db.insert(obj)
+
+    def get_backup_sr_wo_login(self):
         srs = []
 
-        for sr in mongo.db.backup_sr.find({}, {'login': 0, 'password': 0}):
+        for sr in self.db.find({}, {'login': 0, 'password': 0}):
             srs.append(sr)
 
         return srs
 
-    @staticmethod
-    def get_backup_sr(sr_name):
-        return mongo.db.backup_sr.find_one({'_id': sr_name})
+    def get_backup_sr(self, sr_name):
+        return self.db.find_one({'_id': sr_name})
 
-# class StorageModel:
-#
-#     @staticmethod
-#     def add_storage(obj):
-#         mongo.db.sr.insert(obj)
-#
-#     @staticmethod
-#     def get_backup_sr_paths():
-#         paths = []
-#
-#         for path in mongo.db.sr.find({}, {'share_path': 1}):
-#             paths.append(path)
-#
-#         return paths

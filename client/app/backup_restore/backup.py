@@ -77,8 +77,8 @@ class VmBackup(BaseBackup):
                          self.backup_time + '.dd"')
 
             command = 'dd if={disk} of=' + self.backup_dir + '/' + file_name + ' bs=1M'
-
-            if sr['type'] == 'lvmoiscsi':
+            com = ''
+            if sr['type'] in ('lvmoiscsi', 'lvm'):
                 path = self.ISCSI_SR_PATH + sr['uuid']
                 disk = path + '/VHD-' + vdi_uuid
                 com = command.format(disk=disk)
@@ -131,6 +131,7 @@ class VmBackup(BaseBackup):
 
             for vdi_obj, uuid, vbd in vdi_objects:
                 sr = self.__get_sr(vdi_obj)
+                print('sr', sr)
                 file_name = self.__copy_disk(sr, vdi_obj, uuid)
 
                 vdi_spec = self.__get_vdi_meta(vdi_obj=vdi_obj, vbd_meta=vbd, backup_file=file_name)
@@ -163,7 +164,8 @@ class VmBackup(BaseBackup):
         meta_file = self.vm_name+'_'+self.backup_time+'.meta'
 
         self.ssh_session.exec_command('echo '+meta+' >>'+self.backup_dir+'/'+meta_file)
-        BackupModel.add_backup_info({
+        backup_model = BackupModel.get_instance()
+        backup_model.add_backup_info({
             '_id': self.backup_time,
             'vm_name': self.vm_name,
             'vdis': vdis_meta,

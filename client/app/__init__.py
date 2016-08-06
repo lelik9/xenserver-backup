@@ -9,6 +9,8 @@ with app.app_context():
 
     from models import *
     HostsModel.set_db(mongo.db.hosts)
-    # HostsModel.get_instance()
+    VmModel.set_db(mongo.db.vm)
+    BackupModel.set_db(mongo.db.backup)
+    BackupStorageModel.set_db(mongo.db.backup_sr)
 
-    import models, views
+    import views

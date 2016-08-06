@@ -113,10 +113,10 @@ def backup_vm():
     req = dict(request.form)
     result = 'Backup success'
     res_type = 'success'
-
+    vm_controller = VmBackupController()
     try:
         for vm in req['vm[]']:
-            VmBackupController.backup_vm(vm_obj=vm, backup_sr=req['sr'][0])
+            vm_controller.backup_vm(vm_obj=vm, backup_sr=req['sr'][0])
     except KeyError:
         result = 'Please select VM'
         res_type = 'error'

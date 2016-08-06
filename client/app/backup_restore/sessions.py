@@ -9,9 +9,10 @@ PORT = 22
 
 
 def establish_session(obj, db_req):
+    host_model = HostsModel.get_instance()
     db_requests = {
-        'get_pool_of_vm': HostsModel.get_pool_of_vm,
-        'get_pool_of_host': HostsModel.get_pool_of_host
+        'get_pool_of_vm': host_model.get_pool_of_vm,
+        'get_pool_of_host': host_model.get_pool_of_host
     }
 
     host_obj = db_requests[db_req](obj)

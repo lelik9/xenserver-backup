@@ -50,7 +50,8 @@ def hosts():
 
 @app.route('/vms/', methods=['GET'])
 def vms():
-    srs = BackupStorageModel.get_backup_sr_wo_login()
+    backup_sr_model = BackupStorageModel.get_instance()
+    srs = backup_sr_model.get_backup_sr_wo_login()
 
     if 'get' in request.args.keys():
         try:
