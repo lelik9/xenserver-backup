@@ -1,7 +1,4 @@
 # coding=utf-8
-import logging
-
-from multiprocessing import Process
 from pymongo import errors
 
 from models import HostsModel, VmModel, BackupModel, BackupStorageModel
@@ -10,29 +7,6 @@ from app import app
 from backup_restore.restore import Restore
 from backup_restore import sessions
 from backup_restore.backup import VmBackup
-
-
-def proc(vm_obj, sr):
-    def create_logger():
-        """
-        Creates a logging object and returns it
-        """
-        logger = logging.getLogger("backup_restore")
-        logger.setLevel(logging.INFO)
-
-        # create the logging file handler
-        fh = logging.FileHandler("test.log")
-
-        fmt = '%(asctime)s - %(levelname)s - %(message)s'
-        formatter = logging.Formatter(fmt)
-        fh.setFormatter(formatter)
-
-        # add handler to logger object
-        logger.addHandler(fh)
-        return logger
-    app.LOGGER = create_logger()
-    vm_backup = VmBackup(vm_obj=vm_obj, backup_sr=sr)
-    vm_backup.make_backup()
 
 
 class HostController:
@@ -183,41 +157,12 @@ class VmBackupController:
         self.backup_model = BackupModel.get_instance()
         self.backup_sr_model = BackupStorageModel.get_instance()
 
-    def proc(self, vm_obj, sr):
-        def create_logger():
-            """
-            Creates a logging object and returns it
-            """
-            logger = logging.getLogger("backup_restore")
-            logger.setLevel(logging.INFO)
-
-            # create the logging file handler
-            fh = logging.FileHandler("test.log")
-
-            fmt = '%(asctime)s - %(levelname)s - %(message)s'
-            formatter = logging.Formatter(fmt)
-            fh.setFormatter(formatter)
-
-            # add handler to logger object
-            logger.addHandler(fh)
-            return logger
-
-        app.LOGGER = create_logger()
-        vm_backup = VmBackup(vm_obj=vm_obj, backup_sr=sr)
-        vm_backup.make_backup()
-        self.t1.join()
-
     def backup_vm(self, vm_obj, backup_sr):
         sr = self.backup_sr_model.get_backup_sr(backup_sr)
 
-        # proccess = Process(target=proc, args=(vm_obj, sr))
-        import threading
-        self.t1 = threading.Thread(target=proc, args=(vm_obj, sr))
         try:
-            self.t1.start()
-            # proccess.start()
-            # proccess.join()
-
+            vm_backup = VmBackup(vm_obj=vm_obj, backup_sr=sr)
+            vm_backup.start()
         except BaseException as e:
             error = u"VM backup failed, cause: {}".format(str(e))
             app.LOGGER.error(error)

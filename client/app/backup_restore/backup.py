@@ -5,7 +5,7 @@ import time
 
 from sessions import *
 from base_backup import BaseBackup
-from app import app
+from app.logger import logger
 from app.models import HostsModel, BackupModel
 
 
@@ -15,6 +15,7 @@ class VmBackup(BaseBackup):
     """
 
     def __init__(self, vm_obj, backup_sr):
+        super(VmBackup, self).__init__()
         self.backup_time = datetime.now().strftime("%Y-%m-%d_%H-%M")
         self.vm_obj = vm_obj
         self.session, self.ssh_session = establish_session(vm_obj, 'get_pool_of_vm')
@@ -23,7 +24,10 @@ class VmBackup(BaseBackup):
         self.vm_name = self.api.VM.get_name_label(self.vm_obj)
         self.backup_dir = self.BACKUP_PATH + '/' + self.vm_name
 
-        res = self._mount_folder(backup_sr)
+        self._mount_folder(backup_sr)
+
+    def run(self):
+        self.__make_backup()
 
     def __get_vdi(self, vm):
         vbds = self.api.VM.get_VBDs(vm)
@@ -53,7 +57,7 @@ class VmBackup(BaseBackup):
                     yield vdi_obj, vdi_uuid, vbd_meta
 
             except Exception as e:
-                app.LOGGER.error('Get vdi of vbd {} failed; cause: {}'.format(vbd_obj, e))
+                logger.error('Get vdi of vbd {} failed; cause: {}'.format(vbd_obj, e))
 
     def __get_sr(self, vdi):
         sr = self.api.VDI.get_SR(vdi)
@@ -65,11 +69,13 @@ class VmBackup(BaseBackup):
     def __create_snapshot(self):
         try:
             snap = self.api.VM.snapshot(self.vm_obj, self.vm_name)
-            app.LOGGER.info('Created snapshot {}'.format(self.vm_name))
+            logger.info('Created snapshot {}'.format(self.vm_name))
 
             return snap
         except Exception as e:
-            raise Exception('Creating VM {} snapshot error; cause: {}'.format(self.vm_name, str(e)))
+            error = 'Creating VM {} snapshot error; cause: {}'.format(self.vm_name, str(e))
+            logger.error(error)
+            raise Exception(error)
 
     def __copy_disk(self, sr, vdi, vdi_uuid):
         try:
@@ -100,7 +106,7 @@ class VmBackup(BaseBackup):
 
             if error != '' and 'records' not in error:
                 err = 'Copy disk error: {}'.format(error)
-                app.LOGGER.error(err)
+                logger.error(err)
                 raise BaseException(err)
 
             return file_name
@@ -116,11 +122,11 @@ class VmBackup(BaseBackup):
         error = stderr.read()
 
         if error != '':
-            err = app.LOGGER.error('Failed to create backup dir: {}; cause: {}'.format(self.backup_dir,
+            err = logger.error('Failed to create backup dir: {}; cause: {}'.format(self.backup_dir,
                                                                                        error))
             raise Exception(err)
 
-    def make_backup(self):
+    def __make_backup(self):
         self.__create_backup_dir()
 
         snapshot = self.__create_snapshot()
@@ -146,7 +152,7 @@ class VmBackup(BaseBackup):
 
         except Exception as e:
             error = 'VDI backup failed ' + str(e)
-            app.LOGGER.critical(error)
+            logger.critical(error)
             raise Exception(error)
         finally:
             self.api.VM.destroy(snapshot)

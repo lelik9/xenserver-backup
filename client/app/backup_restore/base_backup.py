@@ -1,8 +1,9 @@
 # coding=utf-8
 from app import app
+from threading import Thread
 
 
-class BaseBackup:
+class BaseBackup(Thread):
     BACKUP_PATH = '/media'
     NFS_SR_PATH = '/var/run/sr-mount/'
     ISCSI_SR_PATH = '/dev/VG_XenStorage-'
