@@ -26,15 +26,22 @@ function fillBackupTable() {
 fillBackupTable();
 
 $('#restore').on('click', function () {
-    console.log($('#hostSelect :selected').val());
+    var pool = document.getElementById('hostSelect').value;
+    var sr = document.getElementById('srSelect').value;
+    var vm = [];
+
+    $('input[name=check]:checked').each(function() {
+       vm.push($(this).val());
+     });
+
     var data = {
         vm_name: document.getElementById('vmName').value,
-        host_obj: "OpaqueRef:b7913b8e-6438-376e-5ced-fe9d6ce82e5e",
-        sr: "OpaqueRef:ad36d99e-83aa-adf9-b68f-d3f38be19ae6",
-        backup_id: "2016-07-25_14-43"
+        pool: pool,
+        sr: sr,
+        backup_id: vm
     };
-    console.log($('#srSelect :selected').val());
-    request('/backup/', 'UPDATE', data, null, onSuccess)
+    console.log(data);
+    request('/backup/', 'UPDATE', data, null, onSuccess);
 });
 
 $('#removeBtn').on('click', function () {
@@ -46,13 +53,22 @@ $('#removeBtn').on('click', function () {
 });
 
 function getHostSR() {
-    var host = document.getElementById('hostSelect').value;
-    var sr_select = document.getElementById('srSelect');
+    var pool = document.getElementById('hostSelect').value;
+    var sr_select = $("#srSelect");
 
-    request('/storage/', 'GET', {get:'host_sr'}, null, fill_select);
+    request('/storage/', 'GET', {get:'host_sr', 'pool':pool}, null, fill_select);
 
     function fill_select(data) {
-        console.log(data)
+        var result = data['responseJSON'].result;
+        var sr = result.sr;
+        var html = '';
+
+        sr_select.empty();
+
+        for(var i = 0; i < sr.length; i++){
+            html += "<option value="+sr[i]['obj']+">"+sr[i]['name']+"</option>";
+        }
+        sr_select.append(html);
     }
 }
 getHostSR();

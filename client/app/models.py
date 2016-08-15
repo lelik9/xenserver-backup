@@ -85,13 +85,9 @@ class HostsModel(BaseModel):
 
         return vm
 
-    def get_sr(self):
-        sr = []
-
-        for node in self.db.find({}, {'_id': 0, 'hosts': 0, 'vm': 0, 'login': 0, 'password': 0}):
-            sr.append(node)
-
-        return sr
+    def get_sr(self, pool):
+        return self.db.find_one({"pool": pool}, {'_id': 0, 'hosts': 0, 'vm': 0, 'login': 0,
+                                                 'password': 0})
 
     def get_pool_of_vm(self, vm_obj):
         host = self.db.find_one({'vm.obj': vm_obj})
@@ -248,4 +244,3 @@ class BackupStorageModel(BaseModel):
 
     def get_backup_sr(self, sr_name):
         return self.db.find_one({'_id': sr_name})
-

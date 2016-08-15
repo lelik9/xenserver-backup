@@ -24,8 +24,9 @@ def storage():
         try:
             sr = []
             if request.args['get'] == 'host_sr':
+                pool = request.args['pool']
                 hosts_model = HostsModel.get_instance()
-                sr = hosts_model.get_sr()
+                sr = hosts_model.get_sr(pool=pool)
             elif request.args['get'] == 'backup_sr':
                     sr = BackupStorageModel.get_backup_sr_wo_login()
 
@@ -70,7 +71,8 @@ def backups():
 
     if 'get' in request.args.keys():
         try:
-            backups = BackupModel.get_backups()
+            backup_model = BackupModel.get_instance()
+            backups = backup_model.get_backups()
             return response(result=backups, resp_type='success')
         except BaseException as e:
             return response(result=str(e), resp_type='error')
