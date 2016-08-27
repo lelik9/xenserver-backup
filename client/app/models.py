@@ -94,8 +94,8 @@ class HostsModel(BaseModel):
 
         return host
 
-    def get_pool_of_host(self, host_obj):
-        host = self.db.find_one({'hosts.obj': host_obj})
+    def get_pool_by_name(self, pool_name):
+        host = self.db.find_one({'pool': pool_name})
 
         return host
 

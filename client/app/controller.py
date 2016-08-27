@@ -168,17 +168,10 @@ class VmBackupController:
             app.LOGGER.error(error)
             raise BaseException(error)
 
-    def restore_backup(self, vm_name, host_obj, sr, backup_id):
+    def restore_backup(self, vm_name, pool_name, sr, backup_id):
         backup_meta = self.backup_model.get_backup(backup_id)
-
-        vm_meta = backup_meta['vm']
-        vdis_meta = backup_meta['vdis']
-        vifs_meta = backup_meta['vifs']
         backup_id = backup_meta['backup_sr']
-        old_vm_name = backup_meta['vm_name']
-
         backup_sr = self.backup_sr_model.get_backup_sr(backup_id)
 
-        restore = Restore(host_obj, vm_name, sr, vm_meta, vdis_meta, vifs_meta, backup_sr,
-                          old_vm_name)
-        restore.restore_vm()
+        restore = Restore(pool_name, vm_name, sr, backup_meta, backup_sr)
+        restore.start()

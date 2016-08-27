@@ -1,0 +1,7 @@
+before_script:
+  - docker info
+
+build_image:
+  script:
+    - docker build -t xen-backup .
+    - docker run xen-backup

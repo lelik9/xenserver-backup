@@ -155,11 +155,12 @@ def restore_vm():
     res_type = 'success'
 
     print(req)
-    # try:
-    #     VmBackupController.restore_backup(req['vm_name'][0], req['host_obj'][0], req['sr'],
-    #                                       req['backup_id'][0])
-    # except BaseException as e:
-    #     res_type = 'error'
-    #     result = str(e)
+    try:
+        vm_controller = VmBackupController()
+        vm_controller.restore_backup(req['vm_name'][0], req['pool'][0], req['sr'],
+                                     req['backup_id[]'][0])
+    except BaseException as e:
+        res_type = 'error'
+        result = str(e)
 
     return response(result=result, resp_type=res_type)

@@ -6,16 +6,20 @@ from app.models import HostsModel, BackupModel
 
 
 class Restore(BaseBackup):
-    def __init__(self, host_obj, vm_name, sr, vm_meta, vdis_meta, vifs_meta, backup_sr, old_vm_name):
-        self.session, self.ssh_session = establish_session(host_obj, 'get_pool_of_host')
+    def __init__(self, pool_name, vm_name, sr, backup_meta, backup_sr):
+        super(Restore, self).__init__()
+        self.session, self.ssh_session = establish_session(pool_name, 'get_pool_by_name')
         self.vm_name = vm_name
         self.sr = sr
-        self.vm_meta = vm_meta
-        self.old_vm_name = old_vm_name
-        self.vdis_meta = vdis_meta
-        self.vifs_meta = vifs_meta
+        self.vm_meta = backup_meta['vm']
+        self.vdis_meta = backup_meta['vdis']
+        self.vifs_meta = backup_meta['vifs']
+        self.old_vm_name = backup_meta['vm_name']
         self.backup_sr = backup_sr
         self.api = self.session.xenapi
+
+    def run(self):
+        pass
 
     def restore_vm(self):
         """
