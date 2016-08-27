@@ -2,6 +2,4 @@ image: docker:5000/xenbackup-image:latest
 
 deploy:
   script:
-    - docker build -t xen-backup .
-    - docker run xen-backup
     - python client/backup_client.py
