@@ -1,5 +1,6 @@
 image: docker:5000/xenbackup-image:latest
 
-deploy:
+job1:
+  stage: deploy
   script:
     - python client/backup_client.py
