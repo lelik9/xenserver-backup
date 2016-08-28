@@ -6,4 +6,4 @@ job1:
   stage: deploy
   script:
     - docker build -t xenserver-backup .
-    - docker run -d  --name xenbackup xenserver-backup
+    - docker run -d -p 5001:5001 --name xenbackup xenserver-backup
