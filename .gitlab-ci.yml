@@ -1,6 +1,6 @@
-image: docker:5000/xenbackup-image:latest
 
 job1:
   stage: deploy
   script:
-    - python client/backup_client.py
+    - docker build -t xenserver-backup .
+    - docker run xenserver-backup
