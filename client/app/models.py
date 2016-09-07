@@ -14,6 +14,7 @@ def singletone(cls):
     return wrapper
 
 
+@singletone
 class BaseModel(object):
     instance = None
     db = None
@@ -224,7 +225,7 @@ class BackupModel(BaseModel):
 
         return backups
 
-@singletone
+
 class BackupStorageModel(BaseModel):
     """
         Backup storage model:
