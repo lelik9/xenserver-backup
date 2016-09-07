@@ -1,7 +1,5 @@
-FROM docker:5000/xenbackup-image:latest
+FROM registry.git.domain.alex/lelik9/xenserver:latest
 
-CMD [ "rm", "-rf", "/home/client"]
 ADD client /home/client
-EXPOSE 5001
 ENTRYPOINT ["python"]
 CMD [ "/home/client/backup_client.py" ]
