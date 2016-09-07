@@ -1,0 +1,12 @@
+backup:
+  build: .
+  container_name: xen-backup
+  environment:
+    - "TZ=Europe/Moscow"
+  volumes:
+    - /etc/localtime:/etc/localtime:ro
+  ports:
+    - 5001:5001
+#  external_links:
+#    - discount-nginx-node-1:proxy
+  restart: always

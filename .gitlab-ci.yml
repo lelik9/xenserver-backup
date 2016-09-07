@@ -1,9 +1,16 @@
-before_script:
-  - docker stop xenbackup
-  - docker rm xenbackup
+stages:
+  - clean
+  - deploy
 
-job1:
+cleanup_build:
+  stage: clean
+  script:
+  - docker stop xen-backup
+  - docker rm xen-backup
+  - docker rmi xenserver_backup
+
+deploy:
   stage: deploy
   script:
-    - docker build -t xenserver-backup .
-    - docker run -d -p 5001:5001 --name xenbackup xenserver-backup
+    - docker-compose up -d
+  when: always
