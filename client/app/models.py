@@ -1,8 +1,20 @@
 # coding=utf-8
 from bson import ObjectId
+from functools import wraps
 
 
-class BaseModel:
+def singletone(cls):
+    instance = None
+
+    @wraps(cls)
+    def wrapper(*args, **kwargs):
+        if instance is None:
+            singletone.instance = cls(*args, **kwargs)
+        return singletone.instance
+    return wrapper
+
+
+class BaseModel(object):
     instance = None
     db = None
 
@@ -212,7 +224,7 @@ class BackupModel(BaseModel):
 
         return backups
 
-
+@singletone
 class BackupStorageModel(BaseModel):
     """
         Backup storage model:
@@ -225,11 +237,11 @@ class BackupStorageModel(BaseModel):
         }
     """
 
-    def __init__(self, default=False):
-        if not default:
-            raise SyntaxError("For creating class object use 'get_instance' method")
-        else:
-            BackupStorageModel.instance = self
+    # def __init__(self, default=False):
+    #     if not default:
+    #         raise SyntaxError("For creating class object use 'get_instance' method")
+    #     else:
+    #         BackupStorageModel.instance = self
 
     def add_storage(self, obj):
         self.db.insert(obj)
